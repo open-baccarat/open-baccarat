@@ -134,6 +134,7 @@ export function simulateRound(deck: Card[]): {
   bankerTotal: number;
   result: GameResult;
   cardsUsed: number;
+  isNatural: boolean;  // 是否为天牌（前两张牌达到8或9点）
 } {
   let cardIndex = 0;
   const playerCards: Card[] = [];
@@ -174,6 +175,7 @@ export function simulateRound(deck: Card[]): {
     bankerTotal,
     result,
     cardsUsed: cardIndex,
+    isNatural: playerNatural || bankerNatural,  // 任一方天牌即为天牌局
   };
 }
 

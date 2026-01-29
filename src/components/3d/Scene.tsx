@@ -5,6 +5,7 @@
 'use client';
 
 import { Suspense, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { 
   OrbitControls, 
@@ -58,18 +59,7 @@ export function Scene3D({ playerCards = [], bankerCards = [], isAnimating = fals
   // 显示错误状态
   if (error) {
     return (
-      <div className="w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="text-4xl">🎴</div>
-          <p className="text-zinc-400">3D 场景加载失败</p>
-          <button 
-            onClick={handleRetry}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm transition-colors"
-          >
-            重试
-          </button>
-        </div>
-      </div>
+      <Scene3DError onRetry={handleRetry} />
     );
   }
   
@@ -351,6 +341,25 @@ function Card3D({ card, position, rotation }: Card3DProps) {
         </mesh>
       </group>
     </Float>
+  );
+}
+
+// 3D 场景错误组件
+function Scene3DError({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations('error');
+  return (
+    <div className="w-full h-[400px] rounded-xl overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="text-4xl">🎴</div>
+        <p className="text-zinc-400">{t('sceneLoadFailed')}</p>
+        <button 
+          onClick={onRetry}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm transition-colors"
+        >
+          {t('retry')}
+        </button>
+      </div>
+    </div>
   );
 }
 

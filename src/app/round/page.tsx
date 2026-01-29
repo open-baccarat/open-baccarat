@@ -110,7 +110,7 @@ export default function RoundLookupPage() {
                 className="text-zinc-400 hover:text-emerald-400 transition flex items-center gap-2"
               >
                 <span>📄</span>
-                <span>API Docs</span>
+                <span>{tCommon('apiDocs')}</span>
               </a>
               <span className="text-zinc-700">|</span>
               <Link 

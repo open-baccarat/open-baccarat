@@ -12,7 +12,9 @@ create table shoes
 (
     id                  text not null
         primary key,
-    shoe_number         serial,
+    shoe_number         serial
+        constraint shoes_shoe_number_unique
+            unique,
     deck_count          integer                  default 8,
     total_cards         integer                  default 416,
     first_card_suit     text,
@@ -370,7 +372,7 @@ $$
 DECLARE
     next_num INTEGER;
 BEGIN
-    SELECT NEXTVAL('round_number_seq') INTO next_num;
+    SELECT COALESCE(MAX(round_number), 0) + 1 INTO next_num FROM rounds;
     RETURN next_num;
 END;
 $$;
@@ -461,4 +463,165 @@ grant execute on function check_round_gaps() to anon;
 grant execute on function check_round_gaps() to authenticated;
 
 grant execute on function check_round_gaps() to service_role;
+
+create function create_shoe_atomic(p_id text, p_deck_count integer, p_total_cards integer, p_first_card_suit text, p_first_card_rank text, p_burn_start_count integer, p_burn_end_count integer, p_shuffle_vrf_proof text, p_started_at timestamp with time zone, p_started_at_unix bigint, p_solana_signature text, p_blockchain_status text)
+    returns TABLE(id text, shoe_number integer)
+    language plpgsql
+as
+$$
+DECLARE
+    next_shoe_number INTEGER;
+    retry_count INTEGER := 0;
+    max_retries INTEGER := 5;
+BEGIN
+    LOOP
+        -- 使用 FOR UPDATE 锁防止并发问题
+        SELECT COALESCE(MAX(s.shoe_number), 0) + 1 INTO next_shoe_number 
+        FROM shoes s;
+        
+        BEGIN
+            INSERT INTO shoes (
+                id, shoe_number, deck_count, total_cards, 
+                first_card_suit, first_card_rank, 
+                burn_start_count, burn_end_count,
+                shuffle_vrf_proof, started_at, started_at_unix,
+                solana_signature, blockchain_status
+            ) VALUES (
+                p_id, next_shoe_number, p_deck_count, p_total_cards,
+                p_first_card_suit, p_first_card_rank,
+                p_burn_start_count, p_burn_end_count,
+                p_shuffle_vrf_proof, p_started_at, p_started_at_unix,
+                p_solana_signature, p_blockchain_status
+            );
+            
+            -- 成功插入，返回结果
+            RETURN QUERY SELECT p_id, next_shoe_number;
+            RETURN;
+            
+        EXCEPTION WHEN unique_violation THEN
+            -- 并发冲突，重试
+            retry_count := retry_count + 1;
+            IF retry_count >= max_retries THEN
+                RAISE EXCEPTION '创建牌靴失败：重试 % 次后仍有并发冲突', max_retries;
+            END IF;
+            -- 短暂等待后重试
+            PERFORM pg_sleep(0.01 * retry_count);
+        END;
+    END LOOP;
+END;
+$$;
+
+alter function create_shoe_atomic(text, integer, integer, text, text, integer, integer, text, timestamp with time zone, bigint, text, text) owner to postgres;
+
+grant execute on function create_shoe_atomic(text, integer, integer, text, text, integer, integer, text, timestamp with time zone, bigint, text, text) to anon;
+
+grant execute on function create_shoe_atomic(text, integer, integer, text, text, integer, integer, text, timestamp with time zone, bigint, text, text) to authenticated;
+
+grant execute on function create_shoe_atomic(text, integer, integer, text, text, integer, integer, text, timestamp with time zone, bigint, text, text) to service_role;
+
+create function create_round_atomic(p_id text, p_shoe_id text, p_result text, p_player_total integer, p_banker_total integer, p_winning_total integer, p_is_player_pair boolean, p_is_banker_pair boolean, p_started_at timestamp with time zone, p_started_at_unix bigint, p_completed_at timestamp with time zone, p_completed_at_unix bigint, p_solana_signature text, p_blockchain_status text)
+    returns TABLE(id text, round_number integer)
+    language plpgsql
+as
+$$
+DECLARE
+    next_round_number INTEGER;
+    retry_count INTEGER := 0;
+    max_retries INTEGER := 5;
+BEGIN
+    LOOP
+        SELECT COALESCE(MAX(r.round_number), 0) + 1 INTO next_round_number FROM rounds r;
+        
+        BEGIN
+            INSERT INTO rounds (
+                id, shoe_id, round_number, result,
+                player_total, banker_total, winning_total,
+                is_player_pair, is_banker_pair,
+                started_at, started_at_unix,
+                completed_at, completed_at_unix,
+                solana_signature, blockchain_status
+            ) VALUES (
+                p_id, p_shoe_id, next_round_number, p_result,
+                p_player_total, p_banker_total, p_winning_total,
+                p_is_player_pair, p_is_banker_pair,
+                p_started_at, p_started_at_unix,
+                p_completed_at, p_completed_at_unix,
+                p_solana_signature, p_blockchain_status
+            );
+            
+            RETURN QUERY SELECT p_id, next_round_number;
+            RETURN;
+            
+        EXCEPTION WHEN unique_violation THEN
+            retry_count := retry_count + 1;
+            IF retry_count >= max_retries THEN
+                RAISE EXCEPTION '创建回合失败：重试 % 次后仍有并发冲突', max_retries;
+            END IF;
+            PERFORM pg_sleep(0.01 * retry_count);
+        END;
+    END LOOP;
+END;
+$$;
+
+alter function create_round_atomic(text, text, text, integer, integer, integer, boolean, boolean, timestamp with time zone, bigint, timestamp with time zone, bigint, text, text) owner to postgres;
+
+grant execute on function create_round_atomic(text, text, text, integer, integer, integer, boolean, boolean, timestamp with time zone, bigint, timestamp with time zone, bigint, text, text) to anon;
+
+grant execute on function create_round_atomic(text, text, text, integer, integer, integer, boolean, boolean, timestamp with time zone, bigint, timestamp with time zone, bigint, text, text) to authenticated;
+
+grant execute on function create_round_atomic(text, text, text, integer, integer, integer, boolean, boolean, timestamp with time zone, bigint, timestamp with time zone, bigint, text, text) to service_role;
+
+create function check_shoe_duplicates()
+    returns TABLE(shoe_number integer, count bigint)
+    language plpgsql
+as
+$$
+BEGIN
+    RETURN QUERY
+    SELECT s.shoe_number, COUNT(*) AS count
+    FROM shoes s
+    GROUP BY s.shoe_number
+    HAVING COUNT(*) > 1
+    ORDER BY s.shoe_number;
+END;
+$$;
+
+alter function check_shoe_duplicates() owner to postgres;
+
+grant execute on function check_shoe_duplicates() to anon;
+
+grant execute on function check_shoe_duplicates() to authenticated;
+
+grant execute on function check_shoe_duplicates() to service_role;
+
+create function check_shoe_gaps()
+    returns TABLE(missing_shoe integer)
+    language plpgsql
+as
+$$
+DECLARE
+    min_shoe INTEGER;
+    max_shoe INTEGER;
+BEGIN
+    SELECT MIN(s.shoe_number), MAX(s.shoe_number) INTO min_shoe, max_shoe FROM shoes s;
+    
+    IF min_shoe IS NULL THEN
+        RETURN;
+    END IF;
+    
+    RETURN QUERY
+    SELECT generate_series(min_shoe, max_shoe) AS missing_shoe
+    EXCEPT
+    SELECT s.shoe_number FROM shoes s
+    ORDER BY missing_shoe;
+END;
+$$;
+
+alter function check_shoe_gaps() owner to postgres;
+
+grant execute on function check_shoe_gaps() to anon;
+
+grant execute on function check_shoe_gaps() to authenticated;
+
+grant execute on function check_shoe_gaps() to service_role;
 

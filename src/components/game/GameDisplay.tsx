@@ -151,9 +151,6 @@ export function GameDisplay() {
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-lg">
                   {t('game.player')}
                 </div>
-                <span className="text-blue-300/80 text-sm font-medium tracking-widest uppercase">
-                  Player
-                </span>
               </div>
               <div className="flex justify-center mb-2">
                 {playerCards.length > 0 ? (
@@ -174,7 +171,7 @@ export function GameDisplay() {
             {/* 中央 VS */}
             <div className="flex flex-col items-center justify-center mx-4 md:mx-8">
               <div className="h-12 w-px bg-gradient-to-b from-transparent via-yellow-500/50 to-transparent mb-2" />
-              <span className="text-yellow-500/80 font-bold text-xl">VS</span>
+              <span className="text-yellow-500/80 font-bold text-xl">{t('common.vs')}</span>
               <div className="h-12 w-px bg-gradient-to-b from-transparent via-yellow-500/50 to-transparent mt-2" />
             </div>
 
@@ -184,9 +181,6 @@ export function GameDisplay() {
                 <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-base shadow-lg">
                   {t('game.banker')}
                 </div>
-                <span className="text-red-300/80 text-sm font-medium tracking-widest uppercase">
-                  Banker
-                </span>
               </div>
               <div className="flex justify-center mb-2">
                 {bankerCards.length > 0 ? (
@@ -236,7 +230,7 @@ export function GameDisplay() {
             {/* 中央 VS 分隔线 */}
             <div className="relative flex items-center justify-center w-full max-w-sm py-3 my-2">
               <div className="absolute inset-x-12 top-1/2 h-px bg-gradient-to-r from-transparent via-yellow-500/60 to-transparent" />
-              <span className="relative z-10 text-yellow-500/90 font-bold text-sm bg-emerald-800/95 px-4 py-1 rounded-full shadow-lg">VS</span>
+              <span className="relative z-10 text-yellow-500/90 font-bold text-sm bg-emerald-800/95 px-4 py-1 rounded-full shadow-lg">{t('common.vs')}</span>
             </div>
 
             {/* 庄家区域 */}

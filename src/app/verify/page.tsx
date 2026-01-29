@@ -133,7 +133,7 @@ export default function VerifyPage() {
     } catch (error) {
       setVerificationResult({
         success: false,
-        error: error instanceof Error ? error.message : '验证请求失败',
+        error: error instanceof Error ? error.message : t('failed'),
       });
     } finally {
       setIsLoading(false);
@@ -368,7 +368,7 @@ export default function VerifyPage() {
                               <div className="text-blue-400 mt-1">
                                 {t('chainData.totalPoints')}: {verificationResult.chainData.playerTotal}
                                 {verificationResult.chainData.playerPair && (
-                                  <Badge className="ml-2 bg-blue-500/30 text-blue-300 text-xs">对</Badge>
+                                  <Badge className="ml-2 bg-blue-500/30 text-blue-300 text-xs">{tGame('playerPair')}</Badge>
                                 )}
                               </div>
                             </div>
@@ -380,7 +380,7 @@ export default function VerifyPage() {
                               <div className="text-red-400 mt-1">
                                 {t('chainData.totalPoints')}: {verificationResult.chainData.bankerTotal}
                                 {verificationResult.chainData.bankerPair && (
-                                  <Badge className="ml-2 bg-red-500/30 text-red-300 text-xs">对</Badge>
+                                  <Badge className="ml-2 bg-red-500/30 text-red-300 text-xs">{tGame('bankerPair')}</Badge>
                                 )}
                               </div>
                             </div>
@@ -389,7 +389,7 @@ export default function VerifyPage() {
 
                         {/* 原始 Memo 数据 */}
                         <div className="bg-zinc-800 rounded-lg p-4 space-y-3">
-                          <h4 className="text-white font-medium text-sm">原始 Memo 数据</h4>
+                          <h4 className="text-white font-medium text-sm">{t('chainData.rawMemo')}</h4>
                           <div className="text-white font-mono text-xs bg-zinc-900 p-3 rounded overflow-x-auto">
                             {verificationResult.chainData.rawMemo}
                           </div>
@@ -453,7 +453,7 @@ export default function VerifyPage() {
                               <div className="text-blue-400 mt-1">
                                 {t('dbData.playerPoints')}: {verificationResult.dbData.playerTotal}
                                 {verificationResult.dbData.isPlayerPair && (
-                                  <Badge className="ml-2 bg-blue-500/30 text-blue-300 text-xs">对</Badge>
+                                  <Badge className="ml-2 bg-blue-500/30 text-blue-300 text-xs">{tGame('playerPair')}</Badge>
                                 )}
                               </div>
                             </div>
@@ -465,7 +465,7 @@ export default function VerifyPage() {
                               <div className="text-red-400 mt-1">
                                 {t('dbData.bankerPoints')}: {verificationResult.dbData.bankerTotal}
                                 {verificationResult.dbData.isBankerPair && (
-                                  <Badge className="ml-2 bg-red-500/30 text-red-300 text-xs">对</Badge>
+                                  <Badge className="ml-2 bg-red-500/30 text-red-300 text-xs">{tGame('bankerPair')}</Badge>
                                 )}
                               </div>
                             </div>

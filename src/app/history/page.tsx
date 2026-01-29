@@ -473,7 +473,7 @@ function AllRoadmapsPanel({ data, stats }: { data: RoadmapPoint[]; stats: Return
       <CardContent className="p-4 space-y-4">
         {/* 大路 - 顶部最大 */}
         <div className="bg-white/10 rounded-lg p-2">
-          <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.bigRoad')} Big Road</div>
+          <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.bigRoad')}</div>
           <RoadmapGrid grid={roadmaps.bigRoad} type="big_road" rows={6} columns={40} />
         </div>
 
@@ -484,11 +484,11 @@ function AllRoadmapsPanel({ data, stats }: { data: RoadmapPoint[]; stats: Return
             {/* 大眼仔和小路并排 */}
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-white/10 rounded-lg p-2">
-                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.bigEyeBoy')} Big Eye Boy</div>
+                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.bigEyeBoy')}</div>
                 <RoadmapGrid grid={roadmaps.bigEyeBoy} type="derived" rows={6} columns={20} cellSize="sm" />
               </div>
               <div className="bg-white/10 rounded-lg p-2">
-                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.cockroachRoad')} Cockroach Road</div>
+                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.cockroachRoad')}</div>
                 <RoadmapGrid grid={roadmaps.cockroachRoad} type="derived" rows={6} columns={20} cellSize="sm" />
               </div>
             </div>
@@ -496,11 +496,11 @@ function AllRoadmapsPanel({ data, stats }: { data: RoadmapPoint[]; stats: Return
             {/* 小路和珠盘路并排 */}
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-white/10 rounded-lg p-2">
-                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.smallRoad')} Small Road</div>
+                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.smallRoad')}</div>
                 <RoadmapGrid grid={roadmaps.smallRoad} type="derived" rows={6} columns={20} cellSize="sm" />
               </div>
               <div className="bg-white/10 rounded-lg p-2">
-                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.beadPlate')} Bead Plate</div>
+                <div className="text-xs text-white/60 mb-1 font-medium">{t('roadmaps.beadPlate')}</div>
                 <RoadmapGrid grid={roadmaps.beadPlate} type="bead_plate" rows={6} columns={12} cellSize="md" />
               </div>
             </div>
@@ -513,33 +513,27 @@ function AllRoadmapsPanel({ data, stats }: { data: RoadmapPoint[]; stats: Return
               <table className="w-full text-sm">
                 <tbody>
                   <tr className="border-b border-zinc-200">
-                    <td className="py-1.5 text-red-600 font-bold">{tGame('banker')}</td>
-                    <td className="py-1.5">Banker</td>
+                    <td className="py-1.5 text-red-600 font-bold" colSpan={2}>{tGame('bankerWin')}</td>
                     <td className="py-1.5 text-right font-bold text-lg">{(stats as { bankerWins: number }).bankerWins}</td>
                   </tr>
                   <tr className="border-b border-zinc-200">
-                    <td className="py-1.5 text-blue-600 font-bold">{tGame('player')}</td>
-                    <td className="py-1.5">Player</td>
+                    <td className="py-1.5 text-blue-600 font-bold" colSpan={2}>{tGame('playerWin')}</td>
                     <td className="py-1.5 text-right font-bold text-lg">{(stats as { playerWins: number }).playerWins}</td>
                   </tr>
                   <tr className="border-b border-zinc-200">
-                    <td className="py-1.5 text-green-600 font-bold">{tGame('tie')}</td>
-                    <td className="py-1.5">Tie</td>
+                    <td className="py-1.5 text-green-600 font-bold" colSpan={2}>{tGame('tie')}</td>
                     <td className="py-1.5 text-right font-bold text-lg">{(stats as { ties: number }).ties}</td>
                   </tr>
                   <tr className="border-b border-zinc-200">
-                    <td className="py-1.5 text-zinc-600">{t('stats.natural89')}</td>
-                    <td className="py-1.5">Natural</td>
+                    <td className="py-1.5 text-zinc-600" colSpan={2}>{tGame('natural')}</td>
                     <td className="py-1.5 text-right font-bold">{(stats as { naturals: number }).naturals}</td>
                   </tr>
                   <tr className="border-b border-zinc-200">
-                    <td className="py-1.5 text-zinc-600">{tGame('bankerPair')}</td>
-                    <td className="py-1.5">Banker Pair</td>
+                    <td className="py-1.5 text-zinc-600" colSpan={2}>{tGame('bankerPair')}</td>
                     <td className="py-1.5 text-right font-bold">{(stats as { bankerPairs: number }).bankerPairs}</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 text-zinc-600">{tGame('playerPair')}</td>
-                    <td className="py-1.5">Player Pair</td>
+                    <td className="py-1.5 text-zinc-600" colSpan={2}>{tGame('playerPair')}</td>
                     <td className="py-1.5 text-right font-bold">{(stats as { playerPairs: number }).playerPairs}</td>
                   </tr>
                 </tbody>
@@ -557,13 +551,13 @@ function AllRoadmapsPanel({ data, stats }: { data: RoadmapPoint[]; stats: Return
             {/* 图例 */}
             <div className="bg-white rounded-lg p-3">
               <div className="flex items-center justify-center gap-4">
-                <div className="flex items-center gap-1">
-                  <div className="text-sm font-bold text-zinc-600">{tGame('banker')}</div>
-                  <div className="text-sm font-bold text-zinc-600">{tGame('player')}</div>
-                </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-red-500 border-2 border-red-700" />
+                  <div className="text-sm font-bold text-red-600">{tGame('banker')}</div>
+                </div>
+                <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-blue-700" />
+                  <div className="text-sm font-bold text-blue-600">{tGame('player')}</div>
                 </div>
               </div>
             </div>

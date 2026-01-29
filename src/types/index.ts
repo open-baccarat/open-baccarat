@@ -47,6 +47,7 @@ export interface Round {
     player: boolean;
     banker: boolean;
   };
+  isNatural: boolean;  // 是否为天牌（前两张牌达到8或9点）
   startedAt: Date;
   startedAtUnix: number;
   completedAt: Date;

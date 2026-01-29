@@ -25,7 +25,11 @@
     "soundOn": "Sound On",
     "soundOff": "Sound Off",
     "mute": "Mute",
-    "unmute": "Unmute"
+    "unmute": "Unmute",
+    "vs": "VS",
+    "language": "Language",
+    "switchTo": "Switch to",
+    "apiDocs": "API Docs"
   },
   "nav": {
     "history": "History",
@@ -71,7 +75,9 @@
     "verify": "Verify",
     "about": "About",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen"
+    "exitFullscreen": "Exit Fullscreen",
+    "closeMenu": "Close menu",
+    "openMenu": "Open menu"
   },
   "footer": {
     "openSource": "Fully Open Source · Transparent · Verifiable",
@@ -338,7 +344,8 @@
       "playerHand": "Player Hand",
       "bankerHand": "Banker Hand",
       "totalPoints": "Total Points",
-      "viewOnExplorer": "View Full Transaction on Solana Explorer ↗"
+      "viewOnExplorer": "View Full Transaction on Solana Explorer ↗",
+      "rawMemo": "Raw Memo Data"
     },
     "vrf": {
       "title": "🎲 VRF Random Verification",
@@ -401,6 +408,157 @@
       "resultMismatch": "Result mismatch",
       "playerPointsMismatch": "Player points mismatch",
       "bankerPointsMismatch": "Banker points mismatch"
+    }
+  },
+  "stats": {
+    "title": "📈 Statistics",
+    "totalRounds": "{count} rounds total",
+    "bankerWin": "Banker Win",
+    "playerWin": "Player Win",
+    "tie": "Tie",
+    "bankerPair": "Banker Pair",
+    "playerPair": "Player Pair"
+  },
+  "gameRules": {
+    "title": "📖 Game Rules",
+    "tabs": {
+      "basic": "Basic Rules",
+      "draw": "Drawing Rules",
+      "payout": "Payouts"
+    },
+    "basic": {
+      "objective": "Objective",
+      "objectiveDesc1": "Baccarat is a comparing card game between the Player and Banker.",
+      "objectiveDesc2": "The side closer to 9 points wins.",
+      "points": "Point Calculation",
+      "pointsA": "A = 1 point",
+      "points2to9": "2-9 = Face value",
+      "points10": "10, J, Q, K = 0 points",
+      "pointsOver9": "Total points use only the ones digit",
+      "pointsExample": "Example: 7 + 8 = 15 → 5 points",
+      "shoe": "Shoe Info",
+      "shoe8Decks": "Uses 8 decks (416 cards total)",
+      "shoeBurn": "Opening burn based on first card value",
+      "shoeReserve": "Reserve ~15 cards at shoe end"
+    },
+    "draw": {
+      "natural": "Natural Rules",
+      "naturalDesc1": "If either side has 8 or 9 on initial two cards, it's called a \"Natural\".",
+      "naturalDesc2": "When Natural occurs, neither side draws and hands are compared.",
+      "player": "Player Drawing",
+      "player0to5": "0-5 points: Draw one card",
+      "player6to7": "6-7 points: Stand",
+      "banker": "Banker Drawing",
+      "bankerDesc": "Banker drawing depends on Player's third card:",
+      "bankerPoints": "Banker Points",
+      "drawCondition": "Draw Condition",
+      "banker0to2": "Always draws",
+      "banker3": "Draws if Player's 3rd is not 8",
+      "banker4": "Draws if Player's 3rd is 2-7",
+      "banker5": "Draws if Player's 3rd is 4-7",
+      "banker6": "Draws if Player's 3rd is 6-7",
+      "banker7": "Stands"
+    },
+    "payout": {
+      "standard": "Standard Payouts",
+      "bankerWin": "Banker Win",
+      "playerWin": "Player Win",
+      "tie": "Tie",
+      "bankerPair": "Banker Pair",
+      "playerPair": "Player Pair",
+      "commission": "5% commission",
+      "bankerPairDesc": "Banker's first two cards match",
+      "playerPairDesc": "Player's first two cards match",
+      "disclaimer": "Notice",
+      "demoOnly": "⚠️ Demo Only",
+      "disclaimerDesc1": "This platform is for demonstration only, no real money betting.",
+      "disclaimerDesc2": "All payouts are for rule explanation only."
+    }
+  },
+  "verificationPanel": {
+    "title": "🔍 Verification Center",
+    "selectRound": "Select a round to verify",
+    "roundNumber": "Round #{roundNumber}",
+    "gameId": "Game ID",
+    "blockchainStatus": "Blockchain Status",
+    "verifying": "Verifying...",
+    "startVerification": "🔐 Start Verification",
+    "verificationPassed": "Verification Passed",
+    "verificationFailed": "Verification Failed",
+    "viewOnExplorer": "🔗 View on Solana Explorer",
+    "verificationContent": "Verification content:",
+    "content": {
+      "rules": "Game rules correctness (drawing rules, point calculation)",
+      "result": "Result accuracy",
+      "transaction": "Blockchain transaction confirmation status",
+      "vrf": "VRF random proof (if applicable)"
+    },
+    "rulesValid": "✅ Game rules verification passed",
+    "rulesInvalid": "❌ Game rules verification failed",
+    "playerPoints": "✅ Player points: {points}",
+    "bankerPoints": "✅ Banker points: {points}",
+    "transactionConfirmed": "✅ Blockchain transaction confirmed (Slot: {slot})",
+    "transactionFailed": "❌ Blockchain verification failed: {error}",
+    "transactionPending": "⏳ Blockchain transaction pending",
+    "verificationError": "❌ Verification error: {error}",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "failed": "Failed"
+    }
+  },
+  "error": {
+    "title": "⚠️ Error",
+    "message": "The application encountered an error. Please try refreshing the page.",
+    "retry": "Retry",
+    "refresh": "Refresh Page",
+    "sceneLoadFailed": "3D scene failed to load",
+    "unknown": "Unknown error"
+  },
+  "roundDetail": {
+    "title": "Round #{roundNumber} Details",
+    "shoeLabel": "Shoe #{shoeNumber}",
+    "player": "Player",
+    "banker": "Banker",
+    "playerLabel": "PLAYER",
+    "bankerLabel": "BANKER",
+    "pair": "Pair",
+    "bankerWin": "Banker Win",
+    "playerWin": "Player Win",
+    "tie": "Tie",
+    "blockchain": {
+      "title": "🔗 Blockchain Verification",
+      "signature": "Transaction Signature",
+      "status": "Status",
+      "pending": "Pending",
+      "confirmed": "✅ Confirmed",
+      "confirming": "⏳ Confirming",
+      "completedAt": "Completed At",
+      "shoeRound": "Shoe / Round",
+      "shoeRoundFormat": "Shoe #{shoeNumber} · Round #{roundNumber}",
+      "viewOnExplorer": "View on Solana Explorer ↗"
+    },
+    "howToVerify": {
+      "title": "🔍 How to Verify",
+      "step1": "1. Click the button above to view transaction details on Solana Explorer",
+      "step2": "2. Verify that the game results in the transaction match the page display",
+      "step3": "3. Use VRF proof to verify the fairness of random numbers",
+      "step4": "4. All game logic code is open source, available for audit on GitHub"
+    },
+    "apiTip": {
+      "label": "💡 Developer Tip:",
+      "text": "Access the API directly for JSON data"
+    },
+    "notFound": {
+      "titleNotStarted": "Round #{roundId} Not Yet Started",
+      "titleInvalid": "Invalid Round Number",
+      "descNotStarted": "This round hasn't started yet. Please check back later or view other completed rounds.",
+      "descInvalid": "Please enter a valid round number.",
+      "lookupOther": "🔍 Lookup Other Rounds",
+      "viewHistory": "📊 View History",
+      "returnHome": "🏠 Return Home",
+      "tip": "💡 Tip: Games start automatically every minute, synchronized globally.",
+      "apiTip": "Or query via API:"
     }
   }
 }

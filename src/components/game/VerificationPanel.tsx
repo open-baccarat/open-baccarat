@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,8 @@ interface VerificationPanelProps {
 }
 
 export function VerificationPanel({ round }: VerificationPanelProps) {
+  const t = useTranslations('verificationPanel');
+  const tError = useTranslations('error');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     isValid: boolean;
@@ -41,31 +44,31 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
         round.bankerCards,
         round.result
       );
-      details.push(rulesValid ? '✅ 游戏规则验证通过' : '❌ 游戏规则验证失败');
+      details.push(rulesValid ? t('rulesValid') : t('rulesInvalid'));
       if (!rulesValid) isValid = false;
 
       // 2. 验证点数计算
-      details.push(`✅ 闲家点数: ${round.playerTotal}`);
-      details.push(`✅ 庄家点数: ${round.bankerTotal}`);
+      details.push(t('playerPoints', { points: round.playerTotal }));
+      details.push(t('bankerPoints', { points: round.bankerTotal }));
 
       // 3. 验证区块链交易
       if (round.solanaSignature) {
         const txResult = await verifyTransaction(round.solanaSignature);
         if (txResult.isValid) {
-          details.push(`✅ 区块链交易已确认 (Slot: ${txResult.slot})`);
+          details.push(t('transactionConfirmed', { slot: txResult.slot ?? 0 }));
         } else {
-          details.push(`❌ 区块链验证失败: ${txResult.error}`);
+          details.push(t('transactionFailed', { error: txResult.error ?? 'Unknown error' }));
           isValid = false;
         }
       } else {
-        details.push('⏳ 区块链交易待确认');
+        details.push(t('transactionPending'));
       }
 
       setVerificationResult({ isValid, details });
     } catch (error) {
       setVerificationResult({
         isValid: false,
-        details: ['❌ 验证过程出错: ' + (error instanceof Error ? error.message : '未知错误')],
+        details: [t('verificationError', { error: error instanceof Error ? error.message : tError('unknown') })],
       });
     } finally {
       setIsVerifying(false);
@@ -76,11 +79,11 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
     return (
       <Card className="bg-zinc-900/80 border-zinc-800">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg text-white">🔍 验证中心</CardTitle>
+          <CardTitle className="text-lg text-white">{t('title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-zinc-500 text-sm text-center py-4">
-            选择一局游戏进行验证
+            {t('selectRound')}
           </p>
         </CardContent>
       </Card>
@@ -91,9 +94,9 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
     <Card className="bg-zinc-900/80 border-zinc-800">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg text-white">🔍 验证中心</CardTitle>
+          <CardTitle className="text-lg text-white">{t('title')}</CardTitle>
           <Badge variant="outline" className="border-zinc-600">
-            局号 #{round.roundNumber}
+            {t('roundNumber', { roundNumber: round.roundNumber })}
           </Badge>
         </div>
       </CardHeader>
@@ -101,11 +104,11 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
         {/* 基本信息 */}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-zinc-400">游戏ID</span>
+            <span className="text-zinc-400">{t('gameId')}</span>
             <span className="font-mono text-white text-xs">{round.id}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-zinc-400">区块链状态</span>
+            <span className="text-zinc-400">{t('blockchainStatus')}</span>
             <BlockchainStatusBadge status={round.blockchainStatus} />
           </div>
         </div>
@@ -121,10 +124,10 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
           {isVerifying ? (
             <>
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              验证中...
+              {t('verifying')}
             </>
           ) : (
-            '🔐 开始验证'
+            t('startVerification')
           )}
         </Button>
 
@@ -148,7 +151,7 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
                   verificationResult.isValid ? 'text-emerald-400' : 'text-red-400'
                 )}
               >
-                {verificationResult.isValid ? '验证通过' : '验证失败'}
+                {verificationResult.isValid ? t('verificationPassed') : t('verificationFailed')}
               </span>
             </div>
 
@@ -170,18 +173,18 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 text-sm text-emerald-400 hover:underline"
           >
-            🔗 在 Solana 区块浏览器上查看
+            {t('viewOnExplorer')}
           </a>
         )}
 
         {/* 验证说明 */}
         <div className="text-xs text-zinc-500 space-y-1">
-          <p>验证内容：</p>
+          <p>{t('verificationContent')}</p>
           <ul className="list-disc list-inside space-y-0.5">
-            <li>游戏规则正确性（补牌规则、点数计算）</li>
-            <li>结果判定准确性</li>
-            <li>区块链交易确认状态</li>
-            <li>VRF 随机数证明（如适用）</li>
+            <li>{t('content.rules')}</li>
+            <li>{t('content.result')}</li>
+            <li>{t('content.transaction')}</li>
+            <li>{t('content.vrf')}</li>
           </ul>
         </div>
       </CardContent>
@@ -190,17 +193,19 @@ export function VerificationPanel({ round }: VerificationPanelProps) {
 }
 
 function BlockchainStatusBadge({ status }: { status: string }) {
+  const t = useTranslations('verificationPanel.status');
+  
   const config: Record<string, { label: string; className: string }> = {
     pending: {
-      label: '确认中',
+      label: t('pending'),
       className: 'border-yellow-500/50 text-yellow-400',
     },
     confirmed: {
-      label: '已确认',
+      label: t('confirmed'),
       className: 'border-emerald-500/50 text-emerald-400',
     },
     failed: {
-      label: '失败',
+      label: t('failed'),
       className: 'border-red-500/50 text-red-400',
     },
   };

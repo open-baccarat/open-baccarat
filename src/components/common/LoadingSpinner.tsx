@@ -2,6 +2,9 @@
 // OpenBaccarat - 加载指示器
 // ============================================
 
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -31,9 +34,10 @@ export function LoadingSpinner({ size = 'md', className, text }: LoadingSpinnerP
 }
 
 export function PageLoading() {
+  const t = useTranslations('common');
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-      <LoadingSpinner size="lg" text="加载中..." />
+      <LoadingSpinner size="lg" text={t('loading')} />
     </div>
   );
 }

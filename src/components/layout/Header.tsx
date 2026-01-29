@@ -249,7 +249,7 @@ export function Header() {
               size="icon"
               onClick={toggleMenu}
               className="w-10 h-10 sm:w-11 sm:h-11 text-zinc-400 hover:text-white hover:bg-zinc-800 ml-0.5"
-              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={isMenuOpen ? t('header.closeMenu') : t('header.openMenu')}
               aria-expanded={isMenuOpen}
             >
               <div className="relative w-5 h-5 flex flex-col justify-center items-center">

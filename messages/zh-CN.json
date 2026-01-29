@@ -25,7 +25,11 @@
     "soundOn": "开启音效",
     "soundOff": "静音",
     "mute": "静音",
-    "unmute": "开启音效"
+    "unmute": "开启音效",
+    "vs": "VS",
+    "language": "语言",
+    "switchTo": "切换到",
+    "apiDocs": "API 文档"
   },
   "nav": {
     "history": "历史记录",
@@ -71,7 +75,9 @@
     "verify": "验证",
     "about": "关于",
     "fullscreen": "全屏",
-    "exitFullscreen": "退出全屏"
+    "exitFullscreen": "退出全屏",
+    "closeMenu": "关闭菜单",
+    "openMenu": "打开菜单"
   },
   "footer": {
     "openSource": "完全开源 · 透明可验证",
@@ -338,7 +344,8 @@
       "playerHand": "闲家手牌",
       "bankerHand": "庄家手牌",
       "totalPoints": "总点数",
-      "viewOnExplorer": "在 Solana Explorer 查看完整交易 ↗"
+      "viewOnExplorer": "在 Solana Explorer 查看完整交易 ↗",
+      "rawMemo": "原始 Memo 数据"
     },
     "vrf": {
       "title": "🎲 VRF 随机数证明",
@@ -401,6 +408,157 @@
       "resultMismatch": "结果不匹配",
       "playerPointsMismatch": "闲家点数不匹配",
       "bankerPointsMismatch": "庄家点数不匹配"
+    }
+  },
+  "stats": {
+    "title": "📈 统计",
+    "totalRounds": "共 {count} 局",
+    "bankerWin": "庄赢",
+    "playerWin": "闲赢",
+    "tie": "和局",
+    "bankerPair": "庄对",
+    "playerPair": "闲对"
+  },
+  "gameRules": {
+    "title": "📖 游戏规则",
+    "tabs": {
+      "basic": "基本规则",
+      "draw": "补牌规则",
+      "payout": "赔率说明"
+    },
+    "basic": {
+      "objective": "游戏目标",
+      "objectiveDesc1": "百家乐是一种比较闲家（Player）和庄家（Banker）点数的游戏。",
+      "objectiveDesc2": "点数更接近 9 的一方获胜。",
+      "points": "点数计算",
+      "pointsA": "A = 1点",
+      "points2to9": "2-9 = 面值点数",
+      "points10": "10, J, Q, K = 0点",
+      "pointsOver9": "总点数超过9时取个位数",
+      "pointsExample": "例：7 + 8 = 15 → 5点",
+      "shoe": "牌靴说明",
+      "shoe8Decks": "使用 8 副牌（共 416 张）",
+      "shoeBurn": "开局时根据第一张牌点数烧牌",
+      "shoeReserve": "牌靴末端保留约 15 张牌不使用"
+    },
+    "draw": {
+      "natural": "天牌规则",
+      "naturalDesc1": "任一方前两张牌总点数为 8 或 9 时，称为「天牌」（Natural）。",
+      "naturalDesc2": "天牌出现时，双方都不再补牌，直接比较大小。",
+      "player": "闲家补牌",
+      "player0to5": "0-5 点：补一张牌",
+      "player6to7": "6-7 点：不补牌",
+      "banker": "庄家补牌",
+      "bankerDesc": "庄家补牌规则取决于闲家第三张牌：",
+      "bankerPoints": "庄家点数",
+      "drawCondition": "补牌条件",
+      "banker0to2": "必定补牌",
+      "banker3": "闲家第三张不是 8 时补牌",
+      "banker4": "闲家第三张是 2-7 时补牌",
+      "banker5": "闲家第三张是 4-7 时补牌",
+      "banker6": "闲家第三张是 6-7 时补牌",
+      "banker7": "不补牌"
+    },
+    "payout": {
+      "standard": "标准赔率",
+      "bankerWin": "庄家赢",
+      "playerWin": "闲家赢",
+      "tie": "和局",
+      "bankerPair": "庄对",
+      "playerPair": "闲对",
+      "commission": "扣除5%佣金",
+      "bankerPairDesc": "庄家前两张相同点数",
+      "playerPairDesc": "闲家前两张相同点数",
+      "disclaimer": "注意事项",
+      "demoOnly": "⚠️ 仅供展示",
+      "disclaimerDesc1": "本平台为游戏展示平台，不涉及真实货币下注。",
+      "disclaimerDesc2": "所有赔率仅作规则说明用途。"
+    }
+  },
+  "verificationPanel": {
+    "title": "🔍 验证中心",
+    "selectRound": "选择一局游戏进行验证",
+    "roundNumber": "局号 #{roundNumber}",
+    "gameId": "游戏ID",
+    "blockchainStatus": "区块链状态",
+    "verifying": "验证中...",
+    "startVerification": "🔐 开始验证",
+    "verificationPassed": "验证通过",
+    "verificationFailed": "验证失败",
+    "viewOnExplorer": "🔗 在 Solana 区块浏览器上查看",
+    "verificationContent": "验证内容：",
+    "content": {
+      "rules": "游戏规则正确性（补牌规则、点数计算）",
+      "result": "结果判定准确性",
+      "transaction": "区块链交易确认状态",
+      "vrf": "VRF 随机数证明（如适用）"
+    },
+    "rulesValid": "✅ 游戏规则验证通过",
+    "rulesInvalid": "❌ 游戏规则验证失败",
+    "playerPoints": "✅ 闲家点数: {points}",
+    "bankerPoints": "✅ 庄家点数: {points}",
+    "transactionConfirmed": "✅ 区块链交易已确认 (Slot: {slot})",
+    "transactionFailed": "❌ 区块链验证失败: {error}",
+    "transactionPending": "⏳ 区块链交易待确认",
+    "verificationError": "❌ 验证过程出错: {error}",
+    "status": {
+      "pending": "确认中",
+      "confirmed": "已确认",
+      "failed": "失败"
+    }
+  },
+  "error": {
+    "title": "⚠️ 出错了",
+    "message": "应用程序遇到了一个错误。请尝试刷新页面。",
+    "retry": "重试",
+    "refresh": "刷新页面",
+    "sceneLoadFailed": "3D 场景加载失败",
+    "unknown": "未知错误"
+  },
+  "roundDetail": {
+    "title": "第 {roundNumber} 局详情",
+    "shoeLabel": "牌靴 #{shoeNumber}",
+    "player": "闲家",
+    "banker": "庄家",
+    "playerLabel": "闲家 PLAYER",
+    "bankerLabel": "庄家 BANKER",
+    "pair": "对子",
+    "bankerWin": "庄赢",
+    "playerWin": "闲赢",
+    "tie": "和局",
+    "blockchain": {
+      "title": "🔗 区块链验证信息",
+      "signature": "交易签名",
+      "status": "状态",
+      "pending": "待确认",
+      "confirmed": "✅ 已确认",
+      "confirming": "⏳ 确认中",
+      "completedAt": "完成时间",
+      "shoeRound": "牌靴 / 局号",
+      "shoeRoundFormat": "牌靴 #{shoeNumber} · 第 {roundNumber} 局",
+      "viewOnExplorer": "在 Solana Explorer 查看 ↗"
+    },
+    "howToVerify": {
+      "title": "🔍 如何验证",
+      "step1": "1. 点击上方按钮前往 Solana Explorer 查看链上交易详情",
+      "step2": "2. 验证交易数据中的游戏结果与页面显示一致",
+      "step3": "3. 使用 VRF 证明验证随机数的公平性",
+      "step4": "4. 所有游戏逻辑代码开源，可在 GitHub 审计"
+    },
+    "apiTip": {
+      "label": "💡 开发者提示：",
+      "text": "直接获取 JSON 数据请访问 API"
+    },
+    "notFound": {
+      "titleNotStarted": "第 {roundId} 局暂未开始",
+      "titleInvalid": "局号无效",
+      "descNotStarted": "这一局还没有开始，请稍后再查询或查看其他已完成的局。",
+      "descInvalid": "请输入有效的局号数字。",
+      "lookupOther": "🔍 查询其他局",
+      "viewHistory": "📊 查看历史记录",
+      "returnHome": "🏠 返回首页",
+      "tip": "💡 提示：游戏在每分钟整点自动开始，全球同步进行。",
+      "apiTip": "也可通过 API 查询："
     }
   }
 }

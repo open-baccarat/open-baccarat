@@ -111,6 +111,14 @@ export const config = {
       return config.isDemo;
     },
   },
+  
+  // Twitter 配置
+  twitter: {
+    // 是否启用 Twitter 自动发推
+    get enabled() {
+      return process.env.NEXT_PUBLIC_TWITTER_ENABLED === 'true';
+    },
+  },
 } as const;
 
 /**
@@ -141,5 +149,6 @@ export function logConfig(): void {
   console.log(`   数据库写入: ${config.database.enableWrite ? '启用' : '禁用'}`);
   console.log(`   链上记录: ${config.blockchain.enableMemo ? '启用' : '禁用'}${config.blockchain.enableMemo && !config.blockchain.hasPayerKey ? ' (⚠️ 需要私钥)' : ''}`);
   console.log(`   VRF: ${getVrfProviderName()}`);
+  console.log(`   Twitter 发推: ${config.twitter.enabled ? '启用' : '禁用'}`);
   console.log(`   每局间隔: ${config.game.roundIntervalSeconds}秒`);
 }

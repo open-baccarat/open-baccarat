@@ -31,18 +31,26 @@ function parseRoundFromRequest(body: {
     }));
 
   // 注意：completedAtUnix 是毫秒时间戳（与数据库保持一致）
+  const playerCards = parseCards(body.playerCards);
+  const bankerCards = parseCards(body.bankerCards);
+  
+  // 检查是否为天牌（前两张牌达到8或9点）
+  const isNatural = (body.playerTotal >= 8 || body.bankerTotal >= 8) && 
+                    playerCards.length === 2 && bankerCards.length === 2;
+  
   return {
     id: body.id,
     shoeId: body.shoeId,
     shoeNumber: body.shoeNumber || 0,
     roundNumber: body.roundNumber,
     result: body.result,
-    playerCards: parseCards(body.playerCards),
-    bankerCards: parseCards(body.bankerCards),
+    playerCards,
+    bankerCards,
     playerTotal: body.playerTotal,
     bankerTotal: body.bankerTotal,
     winningTotal: body.result === 'player_win' ? body.playerTotal : body.result === 'banker_win' ? body.bankerTotal : body.playerTotal,
     isPair: body.isPair,
+    isNatural,
     startedAt: new Date(body.completedAtUnix - 10000), // 毫秒
     startedAtUnix: body.completedAtUnix - 10000, // 毫秒
     completedAt: new Date(body.completedAtUnix), // 毫秒，直接使用

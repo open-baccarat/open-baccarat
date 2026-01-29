@@ -3,7 +3,8 @@
 // ============================================
 
 import { supabase } from './client';
-import type { Round, Shoe, GameStats, RoadmapPoint, PaginatedResponse, CardSuit, CardRank } from '@/types';
+import type { Round, Shoe, GameStats, RoadmapPoint, PaginatedResponse, CardSuit, CardRank, Card } from '@/types';
+import { calculateHandTotal } from '@/lib/game/rules';
 
 // 视图类型定义（因为 Database 类型还未完善）
 interface CurrentShoeRow {
@@ -162,35 +163,7 @@ export async function getRoundsHistory(
   }
 
   const rowsData = data as unknown as RoundsListRow[];
-  const rounds: Round[] = rowsData.map((row) => ({
-    id: row.id,
-    shoeId: row.shoe_id,
-    shoeNumber: row.shoe_number,
-    roundNumber: row.round_number,
-    playerCards: row.player_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    bankerCards: row.banker_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    playerTotal: row.player_total,
-    bankerTotal: row.banker_total,
-    winningTotal: row.winning_total,
-    result: row.result as Round['result'],
-    isPair: {
-      player: row.is_player_pair,
-      banker: row.is_banker_pair,
-    },
-    startedAt: new Date(row.started_at),
-    startedAtUnix: row.started_at_unix,
-    completedAt: new Date(row.completed_at),
-    completedAtUnix: row.completed_at_unix,
-    solanaSignature: row.solana_signature,
-    solanaExplorerUrl: row.solana_explorer_url,
-    blockchainStatus: row.blockchain_status as Round['blockchainStatus'],
-  }));
+  const rounds: Round[] = rowsData.map(mapRowToRound);
 
   return {
     items: rounds,
@@ -345,38 +318,33 @@ export function subscribeToRounds(callback: (round: Round) => void) {
 // 写入操作
 // ============================================
 
-// 创建新牌靴（返回包含数据库生成的 shoe_number）
+// 创建新牌靴（使用原子性函数，确保编号不跳过）
 export async function createShoe(shoe: Shoe): Promise<{ id: string; shoeNumber: number } | null> {
+  // 使用原子性数据库函数，确保牌靴编号连续不跳过
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('shoes')
-    .insert({
-      id: shoe.id,
-      // shoe_number 是 serial 类型，由数据库自动生成
-      deck_count: shoe.deckCount,
-      total_cards: shoe.totalCards,
-      // 统一使用单数形式（spade/heart/diamond/club），与 CardSuit 类型一致
-      first_card_suit: shoe.firstCard?.suit || null,
-      first_card_rank: shoe.firstCard?.rank || null,
-      burn_start_count: shoe.burnStartCount,
-      burn_end_count: shoe.burnEndCount,
-      // usable_cards 是数据库生成列，不能手动插入
-      shuffle_vrf_proof: shoe.shuffleVrfProof,
-      started_at: shoe.startedAt.toISOString(),
-      started_at_unix: shoe.startedAtUnix,
-      solana_signature: shoe.solanaSignature,
-      // solana_explorer_url 是数据库生成列，不能手动插入
-      blockchain_status: shoe.blockchainStatus,
-    })
-    .select('id, shoe_number')
-    .single();
+  const { data, error } = await (supabase.rpc as any)('create_shoe_atomic', {
+    p_id: shoe.id,
+    p_deck_count: shoe.deckCount,
+    p_total_cards: shoe.totalCards,
+    p_first_card_suit: shoe.firstCard?.suit || null,
+    p_first_card_rank: shoe.firstCard?.rank || null,
+    p_burn_start_count: shoe.burnStartCount,
+    p_burn_end_count: shoe.burnEndCount,
+    p_shuffle_vrf_proof: shoe.shuffleVrfProof,
+    p_started_at: shoe.startedAt.toISOString(),
+    p_started_at_unix: shoe.startedAtUnix,
+    p_solana_signature: shoe.solanaSignature,
+    p_blockchain_status: shoe.blockchainStatus,
+  });
 
   if (error) {
     console.error('创建牌靴失败:', error);
     return null;
   }
 
-  return data ? { id: data.id, shoeNumber: data.shoe_number } : null;
+  // RPC 返回的是数组，取第一个元素
+  const result = Array.isArray(data) ? data[0] : data;
+  return result ? { id: result.id, shoeNumber: result.shoe_number } : null;
 }
 
 // 更新牌靴
@@ -400,44 +368,45 @@ export async function updateShoe(shoeId: string, updates: Partial<{
   return true;
 }
 
-// 创建新回合
-export async function createRound(round: Round): Promise<string | null> {
+// 创建新回合（使用原子性函数，确保局号不跳过）
+// 返回 { id, roundNumber } 以便调用者知道实际分配的局号
+export async function createRound(round: Round): Promise<{ id: string; roundNumber: number } | null> {
+  // 使用原子性数据库函数，确保局号连续不跳过
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('rounds')
-    .insert({
-      id: round.id,
-      shoe_id: round.shoeId,
-      round_number: round.roundNumber,
-      result: round.result,
-      player_total: round.playerTotal,
-      banker_total: round.bankerTotal,
-      winning_total: round.winningTotal,
-      is_player_pair: round.isPair.player,
-      is_banker_pair: round.isPair.banker,
-      vrf_proof: null,
-      started_at: round.startedAt.toISOString(),
-      started_at_unix: round.startedAtUnix,
-      completed_at: round.completedAt.toISOString(),
-      completed_at_unix: round.completedAtUnix,
-      solana_signature: round.solanaSignature,
-      // solana_explorer_url 是数据库生成列，不能手动插入
-      blockchain_status: round.blockchainStatus,
-    })
-    .select('id')
-    .single();
+  const { data, error } = await (supabase.rpc as any)('create_round_atomic', {
+    p_id: round.id,
+    p_shoe_id: round.shoeId,
+    p_result: round.result,
+    p_player_total: round.playerTotal,
+    p_banker_total: round.bankerTotal,
+    p_winning_total: round.winningTotal,
+    p_is_player_pair: round.isPair.player,
+    p_is_banker_pair: round.isPair.banker,
+    p_started_at: round.startedAt.toISOString(),
+    p_started_at_unix: round.startedAtUnix,
+    p_completed_at: round.completedAt.toISOString(),
+    p_completed_at_unix: round.completedAtUnix,
+    p_solana_signature: round.solanaSignature,
+    p_blockchain_status: round.blockchainStatus,
+  });
 
   if (error) {
     console.error('创建回合失败:', error);
     return null;
   }
 
-  // 记录使用的牌
-  if (data?.id) {
-    await recordUsedCards(data.id, round.shoeId, round.playerCards, round.bankerCards);
+  // RPC 返回的是数组，取第一个元素
+  const result = Array.isArray(data) ? data[0] : data;
+  
+  if (!result) {
+    console.error('创建回合返回空结果');
+    return null;
   }
 
-  return data?.id || null;
+  // 记录使用的牌
+  await recordUsedCards(result.id, round.shoeId, round.playerCards, round.bankerCards);
+
+  return { id: result.id, roundNumber: result.round_number };
 }
 
 // 记录使用的牌
@@ -522,6 +491,50 @@ export async function updateRound(
 }
 
 // 根据局号获取单局详情
+// 辅助函数：将数据库行转换为 Round 对象
+function mapRowToRound(row: RoundsListRow): Round {
+  const playerCards: Card[] = row.player_cards.map((c) => ({
+    suit: c.suit as CardSuit,
+    rank: c.rank as CardRank,
+  }));
+  const bankerCards: Card[] = row.banker_cards.map((c) => ({
+    suit: c.suit as CardSuit,
+    rank: c.rank as CardRank,
+  }));
+  
+  // 计算是否为天牌（前两张牌达到8或9点）
+  const playerFirst2 = playerCards.slice(0, 2);
+  const bankerFirst2 = bankerCards.slice(0, 2);
+  const playerFirst2Total = playerFirst2.length >= 2 ? calculateHandTotal(playerFirst2) : 0;
+  const bankerFirst2Total = bankerFirst2.length >= 2 ? calculateHandTotal(bankerFirst2) : 0;
+  const isNatural = playerFirst2Total >= 8 || bankerFirst2Total >= 8;
+  
+  return {
+    id: row.id,
+    shoeId: row.shoe_id,
+    shoeNumber: row.shoe_number,
+    roundNumber: row.round_number,
+    playerCards,
+    bankerCards,
+    playerTotal: row.player_total,
+    bankerTotal: row.banker_total,
+    winningTotal: row.winning_total,
+    result: row.result as Round['result'],
+    isPair: {
+      player: row.is_player_pair,
+      banker: row.is_banker_pair,
+    },
+    isNatural,
+    startedAt: new Date(row.started_at),
+    startedAtUnix: row.started_at_unix,
+    completedAt: new Date(row.completed_at),
+    completedAtUnix: row.completed_at_unix,
+    solanaSignature: row.solana_signature,
+    solanaExplorerUrl: row.solana_explorer_url,
+    blockchainStatus: row.blockchain_status as Round['blockchainStatus'],
+  };
+}
+
 export async function getRoundByNumber(roundNumber: number): Promise<Round | null> {
   const { data, error } = await supabase
     .from('rounds_list')
@@ -535,35 +548,7 @@ export async function getRoundByNumber(roundNumber: number): Promise<Round | nul
   }
 
   const row = data as unknown as RoundsListRow;
-  return {
-    id: row.id,
-    shoeId: row.shoe_id,
-    shoeNumber: row.shoe_number,
-    roundNumber: row.round_number,
-    playerCards: row.player_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    bankerCards: row.banker_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    playerTotal: row.player_total,
-    bankerTotal: row.banker_total,
-    winningTotal: row.winning_total,
-    result: row.result as Round['result'],
-    isPair: {
-      player: row.is_player_pair,
-      banker: row.is_banker_pair,
-    },
-    startedAt: new Date(row.started_at),
-    startedAtUnix: row.started_at_unix,
-    completedAt: new Date(row.completed_at),
-    completedAtUnix: row.completed_at_unix,
-    solanaSignature: row.solana_signature,
-    solanaExplorerUrl: row.solana_explorer_url,
-    blockchainStatus: row.blockchain_status as Round['blockchainStatus'],
-  };
+  return mapRowToRound(row);
 }
 
 // 根据 ID 获取单局详情
@@ -580,35 +565,7 @@ export async function getRoundById(roundId: string): Promise<Round | null> {
   }
 
   const row = data as unknown as RoundsListRow;
-  return {
-    id: row.id,
-    shoeId: row.shoe_id,
-    shoeNumber: row.shoe_number,
-    roundNumber: row.round_number,
-    playerCards: row.player_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    bankerCards: row.banker_cards.map((c) => ({
-      suit: c.suit as CardSuit,
-      rank: c.rank as CardRank,
-    })),
-    playerTotal: row.player_total,
-    bankerTotal: row.banker_total,
-    winningTotal: row.winning_total,
-    result: row.result as Round['result'],
-    isPair: {
-      player: row.is_player_pair,
-      banker: row.is_banker_pair,
-    },
-    startedAt: new Date(row.started_at),
-    startedAtUnix: row.started_at_unix,
-    completedAt: new Date(row.completed_at),
-    completedAtUnix: row.completed_at_unix,
-    solanaSignature: row.solana_signature,
-    solanaExplorerUrl: row.solana_explorer_url,
-    blockchainStatus: row.blockchain_status as Round['blockchainStatus'],
-  };
+  return mapRowToRound(row);
 }
 
 // ==================== 局号完整性检查 ====================
@@ -684,4 +641,55 @@ export async function getMaxRoundNumber(): Promise<number> {
   }
   
   return data.round_number;
+}
+
+// ==================== 牌靴号完整性检查 ====================
+
+// 检测重复牌靴号
+export async function checkShoeDuplicates(): Promise<{ shoeNumber: number; count: number }[]> {
+  const { data, error } = await supabase.rpc('check_shoe_duplicates') as { 
+    data: { shoe_number: number; count: number }[] | null; 
+    error: Error | null 
+  };
+  
+  if (error) {
+    console.error('检测重复牌靴号失败:', error);
+    return [];
+  }
+  
+  return (data || []).map((row) => ({
+    shoeNumber: row.shoe_number,
+    count: row.count,
+  }));
+}
+
+// 检测牌靴跳号
+export async function checkShoeGaps(): Promise<number[]> {
+  const { data, error } = await supabase.rpc('check_shoe_gaps') as {
+    data: { missing_shoe: number }[] | null;
+    error: Error | null
+  };
+  
+  if (error) {
+    console.error('检测牌靴跳号失败:', error);
+    return [];
+  }
+  
+  return (data || []).map((row) => row.missing_shoe);
+}
+
+// 获取当前最大牌靴号
+export async function getMaxShoeNumber(): Promise<number> {
+  const { data, error } = await supabase
+    .from('shoes')
+    .select('shoe_number')
+    .order('shoe_number', { ascending: false })
+    .limit(1)
+    .single<{ shoe_number: number }>();
+  
+  if (error || !data) {
+    return 0;
+  }
+  
+  return data.shoe_number;
 }

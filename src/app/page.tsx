@@ -167,6 +167,7 @@ function MobileTabPanel() {
 function MobileHistoryList() {
   const t = useTranslations('history');
   const tGame = useTranslations('game');
+  const tCommon = useTranslations('common');
   const { 
     history, 
     historyPage, 
@@ -287,7 +288,7 @@ function MobileHistoryList() {
               <CardGroup cards={round.playerCards} size="xs" />
               <span className="text-blue-400 font-bold text-sm">{round.playerTotal}</span>
             </div>
-            <span className="text-zinc-600 text-xs">vs</span>
+            <span className="text-zinc-600 text-xs">{tCommon('vs')}</span>
             <div className="flex items-center gap-2">
               <span className="text-red-400 font-bold text-sm">{round.bankerTotal}</span>
               <CardGroup cards={round.bankerCards} size="xs" />
@@ -345,6 +346,8 @@ function MobileRoadmapView({
   onViewChange: (type: import('@/types').RoadmapViewType) => void;
 }) {
   const t = useTranslations('history.roadmaps');
+  const tGame = useTranslations('game');
+  const tHistory = useTranslations('history');
   const { generateAllRoadmaps } = require('@/lib/game/roadmap');
 
   const roadmapTypes: { value: import('@/types').RoadmapViewType; label: string }[] = [
@@ -362,7 +365,7 @@ function MobileRoadmapView({
       <div className="flex items-center justify-center h-full">
         <div className="text-center py-12">
           <div className="text-4xl mb-3">📊</div>
-          <p className="text-zinc-400 text-sm">{t('noData')}</p>
+          <p className="text-zinc-400 text-sm">{tHistory('noRoadmapData')}</p>
         </div>
       </div>
     );
@@ -442,7 +445,7 @@ function MobileRoadmapView({
                     isBeadPlate ? "w-4 h-4 text-[8px]" : isDerived ? "w-2.5 h-2.5" : "w-3 h-3"
                   )}
                 >
-                  {isBeadPlate && (cell.result === 'banker_win' ? '庄' : cell.result === 'player_win' ? '闲' : '和')}
+                  {isBeadPlate && (cell.result === 'banker_win' ? tGame('banker') : cell.result === 'player_win' ? tGame('player') : tGame('tie'))}
                 </div>
               );
             })

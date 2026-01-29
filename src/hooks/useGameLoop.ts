@@ -34,6 +34,83 @@ const GAME_CONFIG = {
   clearingLeadTimeMs: config.game.clearingLeadTimeSeconds * 1000,
 };
 
+// ============================================
+// Twitter 发推辅助函数
+// ============================================
+
+// 发送牌靴完成推文（带完整路单图片）
+// 注意：由于 Twitter API 限制（Basic plan 每月 3000 条），只在牌靴结束时发推
+// 包含客户端重试机制
+async function postShoeTweet(data: {
+  shoeNumber: number;
+  rounds: Array<{
+    id: string;
+    roundNumber: number;
+    result: 'banker_win' | 'player_win' | 'tie';
+    playerTotal: number;
+    bankerTotal: number;
+    isPair: { player: boolean; banker: boolean };
+    isNatural: boolean;
+  }>;
+  stats: {
+    bankerWins: number;
+    playerWins: number;
+    ties: number;
+    naturals: number;
+    bankerPairs: number;
+    playerPairs: number;
+  };
+}) {
+  const maxRetries = 3;
+  let lastError = '';
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🐦 发送牌靴 #${data.shoeNumber} 推文 (尝试 ${attempt}/${maxRetries})...`);
+      
+      const response = await fetch('/api/twitter/tweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'shoe_complete',
+          ...data,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(`✅ 牌靴 #${data.shoeNumber} 推文已发送${result.hasImage ? '（含路单图片）' : ''}`);
+        console.log(`   📎 推文链接: ${result.tweetUrl}`);
+        if (result.verified !== undefined) {
+          console.log(`   📋 验证状态: ${result.verified ? '✓ 通过' : '✗ 未通过'}`);
+        }
+        return; // 成功，退出
+      } else {
+        lastError = result.error || 'Unknown error';
+        console.warn(`⚠️ 发推失败 (尝试 ${attempt}):`, lastError);
+        
+        if (attempt < maxRetries) {
+          const delayMs = 1000 * Math.pow(2, attempt - 1); // 指数退避
+          console.log(`⏳ 等待 ${delayMs}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'Network error';
+      console.error(`❌ 发推请求失败 (尝试 ${attempt}):`, error);
+      
+      if (attempt < maxRetries) {
+        const delayMs = 1000 * Math.pow(2, attempt - 1);
+        console.log(`⏳ 等待 ${delayMs}ms 后重试...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  
+  console.error(`❌ 牌靴 #${data.shoeNumber} 推文发送失败 (已重试 ${maxRetries} 次): ${lastError}`);
+}
+
 export function useGameLoop() {
   const {
     phase,
@@ -144,19 +221,27 @@ export function useGameLoop() {
     setStats({ ...statsRef.current });
     // 路单数据不要清空，保留从数据库加载的数据
     
-    // 保存牌靴到数据库（根据配置决定）
+    // 保存牌靴到数据库（根据配置决定，使用同步方式确保成功）
     if (config.database.enableWrite) {
-      saveShoeToDb(shoe).then((result) => {
-        if (result) {
+      // 使用带重试的同步操作，确保牌靴创建成功
+      withDatabaseRetry(
+        async () => {
+          const result = await saveShoeToDb(shoe);
+          if (!result) {
+            throw new Error('保存牌靴返回空结果');
+          }
           console.log(`✅ 牌靴已保存到数据库: ${result.id}, 编号 #${result.shoeNumber}`);
           // 更新牌靴编号为数据库返回的值
-          if (shoeRef.current) {
+          if (shoeRef.current && shoeRef.current.id === shoe.id) {
             shoeRef.current.shoeNumber = result.shoeNumber;
             setCurrentShoe({ ...shoeRef.current });
           }
-        }
-      }).catch((err) => {
-        console.warn('保存牌靴到数据库失败:', err);
+          return result;
+        },
+        `创建牌靴 ${shoe.id}`
+      ).catch((err) => {
+        console.error(`❌ 创建牌靴最终失败（已重试20次）:`, err);
+        // 标记牌靴创建失败，下次启动时会重新创建
       });
     }
     
@@ -263,6 +348,7 @@ export function useGameLoop() {
       winningTotal: Math.max(roundResult.playerTotal, roundResult.bankerTotal),
       result: roundResult.result,
       isPair: pairInfo,
+      isNatural: roundResult.isNatural,  // 使用规则计算的真正天牌判断
       startedAt: new Date(nowMs - 10000),
       startedAtUnix: nowMs - 10000, // Unix 时间戳（毫秒）
       completedAt: new Date(nowMs),
@@ -296,15 +382,39 @@ export function useGameLoop() {
     addToHistory(round);
     
     // 保存回合到数据库（根据配置决定，带20次重试）
+    // 局号由数据库原子性分配，确保不跳过
     if (config.database.enableWrite) {
       withDatabaseRetry(
         async () => {
-          const id = await saveRoundToDb(round);
-          if (!id) {
-            throw new Error('保存回合返回空ID');
+          const result = await saveRoundToDb(round);
+          if (!result) {
+            throw new Error('保存回合返回空结果');
           }
-          console.log(`✅ 回合已保存到数据库: ${id}`);
-          return id;
+          
+          // 使用数据库分配的真正局号更新本地状态
+          const dbRoundNumber = result.roundNumber;
+          console.log(`✅ 回合已保存到数据库: ${result.id}, 局号 #${dbRoundNumber}`);
+          
+          // 如果数据库分配的局号与本地不同，更新本地状态
+          if (dbRoundNumber !== roundNumber) {
+            console.log(`📊 局号已同步: 本地 #${roundNumber} → 数据库 #${dbRoundNumber}`);
+            // 更新 round 对象
+            round.roundNumber = dbRoundNumber;
+            // 更新 ref
+            roundNumberRef.current = dbRoundNumber;
+            // 更新当前回合显示
+            setCurrentRound({ ...round });
+            // 更新历史记录中的局号
+            updateHistoryItem(round.id, { roundNumber: dbRoundNumber });
+            // 更新路单中的局号
+            const roadmapIndex = roadmapRef.current.findIndex(r => r.roundId === round.id);
+            if (roadmapIndex !== -1) {
+              roadmapRef.current[roadmapIndex]!.roundNumber = dbRoundNumber;
+              setRoadmapData([...roadmapRef.current]);
+            }
+          }
+          
+          return result;
         },
         `保存回合 #${round.roundNumber}`
       ).catch((err) => {
@@ -411,6 +521,8 @@ export function useGameLoop() {
                 blockchain_status: 'confirmed',
               });
             }
+            
+            // Twitter 发推已移至牌靴结束时（避免超出 API 限制）
           }
         })
         .catch((err) => {
@@ -421,8 +533,11 @@ export function useGameLoop() {
           updateHistoryItem(round.id, {
             blockchainStatus: 'failed',
           });
+          
+          // Twitter 发推已移至牌靴结束时（避免超出 API 限制）
         });
     }
+    // Twitter 发推已移至牌靴结束时（避免超出 API 限制）
     
     // 3. 至少显示结果一段时间
     await new Promise(r => setTimeout(r, GAME_CONFIG.minResultDisplayMs));
@@ -505,9 +620,10 @@ export function useGameLoop() {
     if (!shoeRef.current || !config.database.enableWrite) return;
     
     const shoeId = shoeRef.current.id;
+    const shoeNumber = shoeRef.current.shoeNumber;
     const now = new Date();
     
-    console.log(`🔒 关闭牌靴 #${shoeRef.current.shoeNumber}...`);
+    console.log(`🔒 关闭牌靴 #${shoeNumber}...`);
     
     try {
       await withDatabaseRetry(
@@ -521,9 +637,47 @@ export function useGameLoop() {
           }
           return success;
         },
-        `关闭牌靴 #${shoeRef.current?.shoeNumber}`
+        `关闭牌靴 #${shoeNumber}`
       );
-      console.log(`✅ 牌靴 #${shoeRef.current?.shoeNumber} 已关闭`);
+      console.log(`✅ 牌靴 #${shoeNumber} 已关闭`);
+      
+      // 发送牌靴完成推文（带完整路单图片）
+      if (config.twitter.enabled) {
+        try {
+          // 从数据库获取该牌靴的所有 rounds 数据
+          const historyResult = await getRoundsHistory(1, 200, shoeId);
+          const shoeRounds = historyResult.items;
+          
+          // 计算统计
+          const stats = {
+            bankerWins: shoeRounds.filter(r => r.result === 'banker_win').length,
+            playerWins: shoeRounds.filter(r => r.result === 'player_win').length,
+            ties: shoeRounds.filter(r => r.result === 'tie').length,
+            naturals: shoeRounds.filter(r => r.isNatural).length,
+            bankerPairs: shoeRounds.filter(r => r.isPair.banker).length,
+            playerPairs: shoeRounds.filter(r => r.isPair.player).length,
+          };
+          
+          // 转换 rounds 数据格式
+          const roundsData = shoeRounds.map(r => ({
+            id: r.id,
+            roundNumber: r.roundNumber,
+            result: r.result,
+            playerTotal: r.playerTotal,
+            bankerTotal: r.bankerTotal,
+            isPair: r.isPair,
+            isNatural: r.isNatural,
+          }));
+          
+          postShoeTweet({
+            shoeNumber,
+            rounds: roundsData,
+            stats,
+          });
+        } catch (tweetError) {
+          console.error('❌ 准备推文数据失败:', tweetError);
+        }
+      }
     } catch (err) {
       console.error('❌ 关闭牌靴失败:', err);
     }

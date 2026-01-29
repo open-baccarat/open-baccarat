@@ -198,6 +198,7 @@ export function useDemoMode() {
         winningTotal: 9,
         result: 'player_win',
         isPair: { player: false, banker: false },
+        isNatural: true,
         startedAt: new Date(Date.now() - 30000),
         startedAtUnix: Date.now() - 30000,
         completedAt: new Date(),

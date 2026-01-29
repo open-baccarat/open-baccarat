@@ -231,7 +231,7 @@ export function ShoeTracker({ hideHeader = false }: ShoeTrackerProps) {
         {/* 紧凑的内部头部 */}
         <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800/30 shrink-0">
           <span className="text-emerald-400 text-xs font-medium">
-            牌靴 #{currentShoe.shoeNumber}
+            {t('shoeNumber')} #{currentShoe.shoeNumber}
           </span>
           <div className="flex gap-1">
             <button
