@@ -165,6 +165,9 @@
     "returnToHome": "返回主页",
     "loadMore": "加载更多",
     "loading": "加载中...",
+    "liveUpdate": "实时更新",
+    "liveUpdateOn": "实时更新已开启",
+    "liveUpdateOff": "实时更新已关闭",
     "lookup": {
       "title": "局号查询",
       "placeholder": "输入局号...",

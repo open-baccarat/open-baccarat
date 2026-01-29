@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -23,6 +23,7 @@ import { generateAllRoadmaps, type RoadmapCell } from '@/lib/game/roadmap';
 import { getRoundsHistory, getRoadmapData, getShoesList, getGameStats, getCurrentShoe } from '@/lib/supabase/queries';
 import { cn } from '@/lib/utils';
 import type { Round, Shoe, GameStats, RoadmapPoint, GameResult } from '@/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type FilterMode = 'current_shoe' | 'all';
 type ResultFilter = 'all' | 'banker_win' | 'player_win' | 'tie';
@@ -46,6 +47,13 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // 实时更新状态
+  const [isLiveUpdate, setIsLiveUpdate] = useState(false);
+  
+  // 判断是否可以开启实时更新（当前牌靴 或 全部记录且未选择特定牌靴）
+  const canEnableLiveUpdate = filterMode === 'current_shoe' || 
+    (filterMode === 'all' && (!selectedShoeId || selectedShoeId === 'all'));
 
   // 结果标签
   const getResultLabel = (result: GameResult) => {
@@ -56,9 +64,11 @@ export default function HistoryPage() {
     }
   };
 
-  // 加载数据
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
+  // 加载数据（showLoading 控制是否显示 loading 状态）
+  const loadData = useCallback(async (showLoading: boolean = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     try {
       // 加载牌靴列表
       const shoesResult = await getShoesList(1, 50);
@@ -92,13 +102,110 @@ export default function HistoryPage() {
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, [filterMode, selectedShoeId, page]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 记录当前最大局号，用于检测是否有新数据
+  const lastRoundNumberRef = useRef<number>(0);
+  
+  // 更新最大局号
+  useEffect(() => {
+    if (rounds.length > 0) {
+      const maxRoundNumber = Math.max(...rounds.map(r => r.roundNumber));
+      lastRoundNumberRef.current = maxRoundNumber;
+    }
+  }, [rounds]);
+
+  // 实时轮询更新：每分钟整点后约3秒开始拉取新数据
+  useEffect(() => {
+    if (!isLiveUpdate || !canEnableLiveUpdate) return;
+    
+    console.log('🔴 开启历史页面实时更新（轮询模式）');
+    
+    let pollTimer: NodeJS.Timeout | null = null;
+    let isPolling = false;
+    
+    // 轮询拉取新数据
+    const pollForNewData = async () => {
+      if (isPolling) return;
+      isPolling = true;
+      
+      const lastRoundNumber = lastRoundNumberRef.current;
+      let attempts = 0;
+      const maxAttempts = 10; // 最多尝试10次，每次间隔1秒
+      
+      console.log(`📥 开始轮询新数据，当前最大局号: #${lastRoundNumber}`);
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          // 静默拉取最新数据（不显示 loading）
+          await loadData(false);
+          
+          // 检查是否有新数据
+          const newMaxRoundNumber = lastRoundNumberRef.current;
+          if (newMaxRoundNumber > lastRoundNumber) {
+            console.log(`✅ 获取到新数据: #${newMaxRoundNumber}`);
+            break;
+          }
+          
+          // 等待1秒后重试
+          await new Promise(r => setTimeout(r, 1000));
+        } catch (error) {
+          console.error('轮询出错:', error);
+        }
+      }
+      
+      isPolling = false;
+    };
+    
+    // 计算到下一个整分钟+3秒的时间
+    const scheduleNextPoll = () => {
+      const now = new Date();
+      const seconds = now.getSeconds();
+      const milliseconds = now.getMilliseconds();
+      
+      // 计算到下一个整分钟+3秒的毫秒数
+      let msToNextPoll: number;
+      if (seconds < 3) {
+        // 还没到本分钟的3秒，等到本分钟的3秒
+        msToNextPoll = (3 - seconds) * 1000 - milliseconds;
+      } else {
+        // 已经过了本分钟的3秒，等到下一分钟的3秒
+        msToNextPoll = (63 - seconds) * 1000 - milliseconds;
+      }
+      
+      console.log(`⏰ ${Math.ceil(msToNextPoll / 1000)} 秒后开始轮询新数据`);
+      
+      pollTimer = setTimeout(() => {
+        pollForNewData();
+        scheduleNextPoll(); // 安排下一次
+      }, msToNextPoll);
+    };
+    
+    scheduleNextPoll();
+
+    return () => {
+      console.log('⚪ 关闭历史页面实时更新');
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+      }
+    };
+  }, [isLiveUpdate, canEnableLiveUpdate, loadData]);
+  
+  // 当筛选条件变化且不支持实时更新时，自动关闭
+  useEffect(() => {
+    if (!canEnableLiveUpdate && isLiveUpdate) {
+      setIsLiveUpdate(false);
+    }
+  }, [canEnableLiveUpdate, isLiveUpdate]);
 
   // 筛选后的记录
   const filteredRounds = useMemo(() => {
@@ -173,6 +280,44 @@ export default function HistoryPage() {
               
               {/* 桌面端筛选 */}
               <div className="hidden md:flex items-center gap-4">
+                {/* 实时更新 Toggle 开关 */}
+                {canEnableLiveUpdate && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <span className={cn(
+                            "text-xs font-medium transition-colors",
+                            isLiveUpdate ? "text-emerald-400" : "text-zinc-400"
+                          )}>
+                            {t('liveUpdate')}
+                          </span>
+                          {/* Toggle 开关 */}
+                          <button
+                            role="switch"
+                            aria-checked={isLiveUpdate}
+                            onClick={() => setIsLiveUpdate(!isLiveUpdate)}
+                            className={cn(
+                              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900",
+                              isLiveUpdate ? "bg-emerald-500" : "bg-zinc-600"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                                isLiveUpdate ? "translate-x-4" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                        </label>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isLiveUpdate ? t('liveUpdateOn') : t('liveUpdateOff')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
                 <Tabs value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
                   <TabsList className="bg-zinc-800">
                     <TabsTrigger value="current_shoe" className="text-xs">{t('currentShoe')}</TabsTrigger>
@@ -200,6 +345,32 @@ export default function HistoryPage() {
 
             {/* 移动端筛选 - 第二行：紧凑按钮 */}
             <div className="md:hidden flex items-center gap-2 mt-3">
+              {/* 移动端实时更新 Toggle 开关 */}
+              {canEnableLiveUpdate && (
+                <label 
+                  className="flex items-center gap-1.5 cursor-pointer select-none shrink-0"
+                  title={isLiveUpdate ? t('liveUpdateOn') : t('liveUpdateOff')}
+                >
+                  {/* Toggle 开关 */}
+                  <button
+                    role="switch"
+                    aria-checked={isLiveUpdate}
+                    onClick={() => setIsLiveUpdate(!isLiveUpdate)}
+                    className={cn(
+                      "relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+                      isLiveUpdate ? "bg-emerald-500" : "bg-zinc-600"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                        isLiveUpdate ? "translate-x-3" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </label>
+              )}
+              
               <div className="flex-1 grid grid-cols-2">
                 <button
                   onClick={() => setFilterMode('current_shoe')}

@@ -165,6 +165,9 @@
     "returnToHome": "Return to Home",
     "loadMore": "Load More",
     "loading": "Loading...",
+    "liveUpdate": "Live Update",
+    "liveUpdateOn": "Live update enabled",
+    "liveUpdateOff": "Live update disabled",
     "lookup": {
       "title": "Round Lookup",
       "placeholder": "Enter round number...",
