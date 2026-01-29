@@ -1,0 +1,398 @@
+{
+  "metadata": {
+    "title": "OpenBaccarat - Transparent & Verifiable Baccarat",
+    "description": "A fully open-source, transparent, and blockchain-verifiable baccarat gaming platform"
+  },
+  "common": {
+    "openBaccarat": "OpenBaccarat",
+    "transparent": "Transparent",
+    "verifiable": "Verifiable",
+    "transparentVerifiable": "Transparent · Verifiable",
+    "fullyOpenSource": "Fully Open Source · Transparent · Verifiable",
+    "demoMode": "Demo Mode",
+    "viewSource": "View Source →",
+    "backToHome": "← Back to Home",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "view": "View",
+    "viewOnChain": "View ↗",
+    "pending": "Pending",
+    "confirmed": "On-chain",
+    "failed": "Failed",
+    "confirming": "Confirming",
+    "soundOn": "Sound On",
+    "soundOff": "Sound Off",
+    "mute": "Mute",
+    "unmute": "Unmute"
+  },
+  "nav": {
+    "history": "History",
+    "about": "About",
+    "verify": "Verify"
+  },
+  "game": {
+    "player": "Player",
+    "banker": "Banker",
+    "tie": "Tie",
+    "playerWin": "Player Win",
+    "bankerWin": "Banker Win",
+    "playerPair": "Player Pair",
+    "bankerPair": "Banker Pair",
+    "natural": "Natural",
+    "points": "Points",
+    "result": "Result",
+    "round": "Round",
+    "shoe": "Shoe",
+    "nextRound": "Next Round",
+    "currentRound": "Current Round",
+    "waitingForShoe": "Waiting for shoe info...",
+    "online": "Online",
+    "viewers": "viewers",
+    "onlineNotice": "Game runs only when viewers are present (to save gas fees for on-chain recording)",
+    "noViewers": "No viewers online",
+    "gamePaused": "Game paused - waiting for viewers"
+  },
+  "phase": {
+    "idle": "Idle",
+    "shuffling": "Shuffling",
+    "burning": "Burning Cards",
+    "clearing": "Preparing Next",
+    "dealing": "Dealing",
+    "result": "Result",
+    "waiting": "Waiting"
+  },
+  "header": {
+    "home": "Home",
+    "history": "History",
+    "solana": "Solana",
+    "roundLookup": "Round Lookup",
+    "verify": "Verify",
+    "about": "About",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen"
+  },
+  "footer": {
+    "openSource": "Fully Open Source · Transparent · Verifiable",
+    "github": "GitHub",
+    "blockchainExplorer": "Blockchain Explorer",
+    "gameRules": "Game Rules",
+    "about": "About",
+    "license": "MIT License · Demo Only, Not a Gambling Platform",
+    "warning": {
+      "title": "Important Notice",
+      "content": "Display only — No login, No betting, No deposits, No real money",
+      "scammer": "Anyone claiming otherwise is a scammer"
+    }
+  },
+  "home": {
+    "banner": {
+      "demoMode": "Demo Mode",
+      "description": "A fully open-source, transparent, and blockchain-verifiable baccarat gaming platform",
+      "viewSource": "View Source →"
+    },
+    "scamWarning": {
+      "title": "Important Notice",
+      "line1": "Demo Only · Technical Showcase",
+      "line2": "No Login · No Betting · No Deposits",
+      "line3": "Anyone claiming otherwise is a scammer",
+      "line4": "Protect your assets"
+    },
+    "features": {
+      "openSource": {
+        "title": "Fully Open Source",
+        "description": "All code is publicly available for anyone to audit and verify"
+      },
+      "blockchain": {
+        "title": "Blockchain Verified",
+        "description": "Every game round is recorded on Solana blockchain, permanently verifiable"
+      },
+      "fairRandom": {
+        "title": "Provably Fair",
+        "description": "Uses VRF (Verifiable Random Function) to ensure results cannot be manipulated"
+      }
+    },
+    "tabs": {
+      "history": "History",
+      "shoe": "Shoe"
+    }
+  },
+  "history": {
+    "title": "History",
+    "viewList": "List",
+    "viewRoadmap": "Roadmap",
+    "noHistory": "No history records",
+    "waitingForGame": "Waiting for the next round to start...",
+    "noRoadmapData": "No roadmap data",
+    "roundNumber": "Round",
+    "shoeNumber": "Shoe",
+    "result": "Result",
+    "playerHand": "Player",
+    "bankerHand": "Banker",
+    "pairs": "Pairs",
+    "time": "Time",
+    "onChain": "On-chain",
+    "pair": "Pair",
+    "currentShoe": "Current Shoe",
+    "allRecords": "All Records",
+    "selectShoe": "Select Shoe",
+    "allShoes": "All Shoes",
+    "filterResult": "Filter Result",
+    "allResults": "All Results",
+    "searchRound": "Search round...",
+    "detailedRecords": "📋 Detailed Records",
+    "viewTransaction": "View Tx",
+    "pendingConfirm": "⏳ Pending",
+    "prevPage": "Previous",
+    "nextPage": "Next",
+    "roadmaps": {
+      "bigRoad": "Big Road",
+      "bigEyeBoy": "Big Eye Boy",
+      "smallRoad": "Small Road",
+      "cockroachRoad": "Cockroach Road",
+      "beadPlate": "Bead Plate"
+    },
+    "stats": {
+      "game": "Game",
+      "total": "Total",
+      "natural89": "8/9 Points"
+    },
+    "derived": {
+      "match": "Match (Red)",
+      "noMatch": "No Match (Blue)"
+    },
+    "returnToHome": "Return to Home",
+    "loadMore": "Load More",
+    "loading": "Loading...",
+    "lookup": {
+      "title": "Round Lookup",
+      "placeholder": "Enter round number...",
+      "button": "Go",
+      "description": "Enter a round number to view detailed game information and blockchain verification.",
+      "invalidNumber": "Please enter a valid round number",
+      "quickLinks": "Or browse:",
+      "apiTip": "API:",
+      "about": "About"
+    }
+  },
+  "shoe": {
+    "title": "Shoe Tracker",
+    "waitingForShoe": "Waiting for shoe info",
+    "shoeLoading": "New shoe will start soon...",
+    "shoeNumber": "Shoe",
+    "tracker": "Tracker",
+    "counter": "Card Counter",
+    "usageProgress": "Usage Progress",
+    "remainingCards": "Remaining",
+    "cards": "cards",
+    "burnDetails": "Burn Details",
+    "openingBurn": "Opening Burn",
+    "openingBurnDesc": "Based on first card value",
+    "cutCardReserve": "Cut Card Reserve",
+    "cutCardDesc": "Reserved at shoe end",
+    "shoeStats": "Shoe Statistics",
+    "bankerWins": "Banker Wins",
+    "playerWins": "Player Wins",
+    "ties": "Ties",
+    "bankerPairs": "Banker Pairs",
+    "playerPairs": "Player Pairs",
+    "verifyOnSolana": "Verify on Solana Blockchain ↗",
+    "used": "Used",
+    "unknownCards": "Unknown",
+    "burnedNotVisible": "Opening Burn + Cut Reserve"
+  },
+  "about": {
+    "title": "🎴 About OpenBaccarat",
+    "subtitle": "A fully open-source, transparent, and verifiable baccarat gaming platform",
+    "vision": {
+      "title": "🎯 Project Vision",
+      "p1": "OpenBaccarat is dedicated to creating a transparent, fair, and verifiable baccarat gaming platform. We believe that through open-source code and blockchain technology, every user can trust the fairness of the game.",
+      "p2": "This is not a gambling platform, but a technical demonstration project, aimed at showing how to build trustworthy gaming systems using modern technology."
+    },
+    "features": {
+      "openSource": {
+        "title": "Fully Open Source",
+        "description": "All code is public on GitHub, anyone can audit the algorithms and logic"
+      },
+      "blockchain": {
+        "title": "Blockchain Verified",
+        "description": "Every round result is recorded on Solana blockchain, immutable and permanently verifiable"
+      },
+      "vrf": {
+        "title": "VRF Random",
+        "description": "Uses Verifiable Random Function to ensure randomness cannot be predicted or manipulated"
+      }
+    },
+    "techStack": {
+      "title": "🛠️ Tech Stack",
+      "frontend": "Frontend",
+      "threeD": "3D",
+      "styling": "Styling",
+      "components": "Components",
+      "database": "Database",
+      "blockchain": "Blockchain",
+      "random": "Randomness",
+      "deployment": "Deployment"
+    },
+    "rules": {
+      "title": "📜 Baccarat Rules",
+      "basic": {
+        "title": "Basic Rules",
+        "rule1": "Uses 8 decks (416 cards total)",
+        "rule2": "Player and Banker each receive 2-3 cards",
+        "rule3": "Closest to 9 points wins",
+        "rule4": "10, J, Q, K count as 0 points, A counts as 1 point",
+        "rule5": "Total points use only the ones digit (e.g., 15 = 5 points)"
+      },
+      "drawing": {
+        "title": "Drawing Rules",
+        "rule1": "If either side has 8 or 9 (Natural), neither draws",
+        "rule2": "Player draws on 0-5 points, stands on 6-7",
+        "rule3": "Banker drawing depends on Player's third card"
+      },
+      "burning": {
+        "title": "Burning Rules",
+        "rule1": "At opening, burn cards based on first card value",
+        "rule2": "Reserve 14-16 cards at shoe end (not dealt)"
+      }
+    },
+    "api": {
+      "title": "🔌 Developer API",
+      "description": "OpenBaccarat provides a RESTful API for programmatic access. All endpoints return JSON data with caching support.",
+      "endpoints": {
+        "singleRound": "Get detailed data for a specific round",
+        "batchQuery": "Batch query with flexible filters and pagination",
+        "docs": "OpenAPI 3.0 documentation (JSON format)",
+        "stats": "Game statistics (wins, ties, pairs)"
+      },
+      "queryParams": {
+        "title": "Query Parameters for /api/rounds",
+        "roundNumber": "Exact round number",
+        "roundRange": "Round number range",
+        "result": "banker_win | player_win | tie",
+        "format": "full | compact | minimal",
+        "pagination": "Pagination (max 100)",
+        "shoeNumber": "Filter by shoe"
+      },
+      "quickStart": {
+        "title": "Quick Start",
+        "example1": "Get round #42 details",
+        "example2": "Get latest 10 rounds (compact format)"
+      },
+      "viewDocs": "View API Documentation ↗",
+      "lookupTip": "Or access directly via API:"
+    },
+    "disclaimer": {
+      "title": "Important Notice",
+      "p1": "OpenBaccarat is a tech demo, NOT a gambling platform",
+      "p2": "Display only — No login, No betting, No deposits",
+      "p3": "For technical research and learning only",
+      "p4": "Contributions to this open source project are welcome"
+    },
+    "links": {
+      "github": "GitHub Source ↗",
+      "verify": "Verification Tool",
+      "explorer": "Solana Explorer ↗"
+    }
+  },
+  "verify": {
+    "title": "🔍 Game Verification Tool",
+    "subtitle": "Enter a transaction signature to verify game result authenticity",
+    "signatureVerify": "Transaction Signature Verification",
+    "signatureDesc": "Enter Solana transaction signature to verify corresponding game record",
+    "signatureLabel": "Solana Transaction Signature",
+    "signaturePlaceholder": "e.g., 5KtPqKbR...",
+    "verifyButton": "Verify Transaction",
+    "verifying": "Verifying...",
+    "success": "✅ Verification Successful",
+    "failed": "❌ Verification Failed",
+    "dataMatch": "Data Consistent",
+    "dataDifference": "Differences Found",
+    "notFound": "Transaction record not found, please check the signature",
+    "tabs": {
+      "chain": "🔗 On-chain Data",
+      "db": "🗄️ Database Data",
+      "compare": "⚖️ Data Comparison"
+    },
+    "chainData": {
+      "title": "🔗 Solana On-chain Data",
+      "subtitle": "Immutable records read from blockchain",
+      "txInfo": "Transaction Info",
+      "signature": "Transaction Signature",
+      "slot": "Block Height (Slot)",
+      "confirmations": "Confirmations",
+      "confirmed": "confirmed",
+      "blockTime": "Block Time",
+      "gameData": "Game Data",
+      "roundNumber": "Round Number",
+      "result": "Result",
+      "playerHand": "Player Hand",
+      "bankerHand": "Banker Hand",
+      "totalPoints": "Total Points",
+      "viewOnExplorer": "View Full Transaction on Solana Explorer ↗"
+    },
+    "vrf": {
+      "title": "🎲 VRF Random Verification",
+      "verified": "✓ Verified",
+      "seed": "VRF Seed",
+      "proof": "VRF Proof"
+    },
+    "dbData": {
+      "title": "🗄️ Database Record",
+      "subtitle": "Game records indexed in local database",
+      "recordId": "Record ID",
+      "shoeId": "Shoe ID",
+      "roundNumber": "Round Number",
+      "result": "Result",
+      "playerPoints": "Player Points",
+      "bankerPoints": "Banker Points",
+      "createdAt": "Created At"
+    },
+    "compare": {
+      "title": "⚖️ On-chain Data vs Database",
+      "subtitle": "Verify consistency between blockchain and local database records",
+      "match": "Data Fully Consistent",
+      "matchDesc": "On-chain record matches database record exactly",
+      "difference": "Data Differences Found",
+      "field": "Field",
+      "chainValue": "On-chain Data",
+      "dbValue": "Database",
+      "status": "Status",
+      "consistent": "✓ Match",
+      "inconsistent": "✗ Mismatch"
+    },
+    "vrfExplain": {
+      "title": "🎲 VRF Random Verification",
+      "p1": "OpenBaccarat uses Verifiable Random Function (VRF) to ensure game fairness. Each round's random numbers come with cryptographic proofs that anyone can verify.",
+      "stepsTitle": "Verification Steps:",
+      "step1": "Get VRF proof and public key",
+      "step2": "Use open-source verification tools to check proof",
+      "step3": "Confirm random numbers correspond to game results",
+      "step4": "Verify dealing sequence follows the rules",
+      "viewCode": "View Open Source Verification Code ↗"
+    },
+    "export": {
+      "title": "📥 Export Verification Result",
+      "desc": "Download complete verification report including on-chain data, VRF proof, and data comparison results.",
+      "downloadJson": "Download JSON",
+      "copyClipboard": "Copy to Clipboard",
+      "copied": "Verification result copied to clipboard"
+    },
+    "faq": {
+      "title": "❓ FAQ",
+      "q1": "Where to find the transaction signature?",
+      "a1": "After each game round, click the \"View\" link in the history records to see the corresponding transaction signature.",
+      "q2": "What if verification fails?",
+      "a2": "Please check if the signature is copied correctly. If the problem persists, the transaction may not be confirmed yet due to network delay, please try again later.",
+      "q3": "How to ensure game fairness?",
+      "a3": "All code is open source, random numbers are verifiable, results are recorded on-chain and immutable. Technical audits are welcome."
+    },
+    "differences": {
+      "roundMismatch": "Round number mismatch",
+      "resultMismatch": "Result mismatch",
+      "playerPointsMismatch": "Player points mismatch",
+      "bankerPointsMismatch": "Banker points mismatch"
+    }
+  }
+}
