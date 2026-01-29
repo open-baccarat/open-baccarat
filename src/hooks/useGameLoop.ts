@@ -462,6 +462,13 @@ export function useGameLoop() {
         const maxRoundNumber = Math.max(...historyResult.items.map(r => r.roundNumber));
         roundNumberRef.current = maxRoundNumber;
         console.log(`📊 从历史恢复局号: 当前最大 #${maxRoundNumber}，下一局 #${maxRoundNumber + 1}`);
+        
+        // 恢复最新一局为 currentRound（用于在等待期间显示正确的局号）
+        const latestRound = historyResult.items[0];
+        if (latestRound) {
+          setCurrentRound(latestRound);
+          console.log(`📊 恢复当前局为 #${latestRound.roundNumber}`);
+        }
       }
       
       // 从数据库视图 game_stats 获取统计数据（确保数据准确）
@@ -491,7 +498,7 @@ export function useGameLoop() {
     } catch (error) {
       console.warn('⚠️ 加载历史数据失败:', error);
     }
-  }, [setHistory, setStats, setCurrentShoe]);
+  }, [setHistory, setStats, setCurrentShoe, setCurrentRound]);
 
   // 关闭当前牌靴
   const closeCurrentShoe = useCallback(async () => {
