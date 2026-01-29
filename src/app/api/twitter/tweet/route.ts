@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { generateRoundImage, generateRoadmapImage } from '@/lib/twitter/imageGenerator';
 
+// Vercel 函数配置：增加超时时间（Pro plan: 60s, Hobby: 10s）
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 // Twitter API 配置
 const TWITTER_API_KEY = process.env.TWITTER_API_KEY || '';
 const TWITTER_API_SECRET = process.env.TWITTER_API_SECRET || '';

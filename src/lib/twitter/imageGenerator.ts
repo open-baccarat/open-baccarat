@@ -6,6 +6,10 @@
 
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+
+// Chromium 远程 URL（用于 Vercel 环境）
+// 使用官方预构建的 chromium 二进制
+const CHROMIUM_REMOTE_URL = 'https://github.com/nicholascloud/chromium/releases/download/v131.0.2/chromium-v131.0.2-pack.tar';
 import { generateAllRoadmaps } from '@/lib/game/roadmap';
 import type { RoadmapPoint, Round } from '@/types';
 
@@ -475,21 +479,49 @@ function generateBeadPlateHTML(grid: any[][], cols: number, rows: number, size: 
 
 // Generate image using Puppeteer
 export async function generateRoadmapImage(data: ShoeCompleteImageData): Promise<Buffer> {
+  const startTime = Date.now();
+  console.log(`🖼️ [ImageGen] 开始生成图片 - Shoe #${data.shoeNumber}, ${data.rounds.length} rounds`);
+  
   const html = generateHTML(data);
+  console.log(`🖼️ [ImageGen] HTML 生成完成 (${Date.now() - startTime}ms)`);
   
   // Get browser executable
   const isVercel = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  console.log(`🖼️ [ImageGen] 运行环境: ${isVercel ? 'Vercel/Lambda' : '本地开发'}`);
   
   let browser;
   try {
     if (isVercel) {
       // Vercel/Lambda environment
+      console.log(`🖼️ [ImageGen] 获取 Chromium 路径 (使用远程URL)...`);
+      
+      // 使用远程 URL 下载 chromium（避免 pnpm 打包问题）
+      let execPath: string;
+      try {
+        execPath = await chromium.executablePath(CHROMIUM_REMOTE_URL);
+      } catch {
+        console.log(`🖼️ [ImageGen] 远程加载失败，尝试本地路径...`);
+        execPath = await chromium.executablePath();
+      }
+      console.log(`🖼️ [ImageGen] Chromium 路径: ${execPath} (${Date.now() - startTime}ms)`);
+      
+      console.log(`🖼️ [ImageGen] 启动浏览器...`);
       browser = await puppeteer.launch({
-        args: chromium.args,
+        args: [
+          ...chromium.args,
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--no-first-run',
+          '--no-sandbox',
+          '--no-zygote',
+          '--single-process',
+        ],
         defaultViewport: { width: 2200, height: 1440, deviceScaleFactor: 2 },
-        executablePath: await chromium.executablePath(),
+        executablePath: execPath,
         headless: true,
       });
+      console.log(`🖼️ [ImageGen] 浏览器启动成功 (${Date.now() - startTime}ms)`);
     } else {
       // Local development - use system Chrome
       const possiblePaths = [
@@ -516,20 +548,28 @@ export async function generateRoadmapImage(data: ShoeCompleteImageData): Promise
         defaultViewport: { width: 2200, height: 1440, deviceScaleFactor: 2 },
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
+      console.log(`🖼️ [ImageGen] 本地浏览器启动成功 (${Date.now() - startTime}ms)`);
     }
     
+    console.log(`🖼️ [ImageGen] 创建页面...`);
     const page = await browser.newPage();
+    console.log(`🖼️ [ImageGen] 设置 HTML 内容...`);
     await page.setContent(html, { waitUntil: 'networkidle0' });
+    console.log(`🖼️ [ImageGen] 页面渲染完成 (${Date.now() - startTime}ms)`);
     
+    console.log(`🖼️ [ImageGen] 截图...`);
     const screenshot = await page.screenshot({
       type: 'png',
       clip: { x: 0, y: 0, width: 2200, height: 1440 },
     });
+    console.log(`🖼️ [ImageGen] 截图完成，大小: ${(screenshot.length / 1024).toFixed(1)}KB (${Date.now() - startTime}ms)`);
     
     await browser.close();
+    console.log(`🖼️ [ImageGen] ✅ 图片生成成功，总耗时: ${Date.now() - startTime}ms`);
     
     return Buffer.from(screenshot);
   } catch (error) {
+    console.error(`🖼️ [ImageGen] ❌ 图片生成失败 (${Date.now() - startTime}ms):`, error);
     if (browser) {
       await browser.close();
     }
