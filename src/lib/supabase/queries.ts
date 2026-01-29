@@ -57,6 +57,7 @@ export async function getCurrentShoe(): Promise<Shoe | null> {
     burnStartCount: shoeData.burn_start_count,
     burnEndCount: shoeData.burn_end_count,
     usableCards: shoeData.usable_cards,
+    cardsUsed: shoeData.cards_used,  // 动态统计的已用牌数
     roundsPlayed: shoeData.rounds_played,
     shuffleVrfProof: null,
     startedAt: new Date(shoeData.started_at),
@@ -303,6 +304,7 @@ export async function getShoesList(
     burnStartCount: row.burn_start_count,
     burnEndCount: row.burn_end_count,
     usableCards: row.usable_cards,
+    cardsUsed: 0,  // 历史牌靴列表不需要动态统计，设为0
     roundsPlayed: row.rounds_played,
     shuffleVrfProof: row.shuffle_vrf_proof,
     startedAt: new Date(row.started_at),

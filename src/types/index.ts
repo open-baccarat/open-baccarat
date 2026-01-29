@@ -65,8 +65,9 @@ export interface Shoe {
   firstCard: Card | null;
   burnStartCount: number;
   burnEndCount: number;
-  usableCards: number;
-  roundsPlayed: number;  // 已进行的局数
+  usableCards: number;      // 初始可用牌数（总牌数 - 开局烧牌 - 1 - 结束保留）
+  cardsUsed: number;        // 已使用牌数（动态统计，来自 used_cards 表）
+  roundsPlayed: number;     // 已进行的局数
   shuffleVrfProof: string | null;
   startedAt: Date;
   startedAtUnix: number;

@@ -11,11 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PlayingCard } from '@/components/common/PlayingCard';
 import { useGameStore } from '@/stores/game-store';
 import { TOTAL_CARDS, DECK_COUNT } from '@/lib/game/constants';
 import { cn } from '@/lib/utils';
-import type { CardRank } from '@/types';
+import type { CardRank, Shoe } from '@/types';
 
 // 牌靴追踪视图类型
 type ShoeViewType = 'tracker' | 'counter';
@@ -28,15 +29,101 @@ interface CardCountData {
   isLoading: boolean;
 }
 
-// 简易进度条组件（如果 shadcn 没有的话）
+// 简易进度条组件
 function ProgressBar({ value, max, className }: { value: number; max: number; className?: string }) {
-  const percentage = Math.round((value / max) * 100);
+  const percentage = Math.min(100, Math.round((value / max) * 100));
   return (
     <div className={cn('w-full bg-zinc-700 rounded-full h-2', className)}>
       <div
         className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
         style={{ width: `${percentage}%` }}
       />
+    </div>
+  );
+}
+
+// ============================================
+// 共用的使用进度组件
+// 被 TrackerView 和 CardCounterView 共同使用
+// ============================================
+interface ShoeProgressProps {
+  currentShoe: Shoe;
+  label?: string;
+  showRemaining?: boolean;
+}
+
+function ShoeProgress({ currentShoe, label, showRemaining = true }: ShoeProgressProps) {
+  const t = useTranslations('shoe');
+  
+  // 核心计算逻辑（单一数据源）：
+  // - 已使用牌数：cardsUsed（来自 used_cards 表的动态统计）
+  // - 总牌数：416
+  // - 不可见牌数：开局烧牌 + 第一张牌 + 切牌保留
+  // - 剩余可用：总牌数 - 不可见牌数 - 已使用牌数
+  const cardsUsed = currentShoe.cardsUsed;
+  const burnStartCount = currentShoe.burnStartCount;
+  const burnEndCount = currentShoe.burnEndCount;
+  const burnedCards = burnStartCount + 1 + burnEndCount;
+  const remainingUsable = TOTAL_CARDS - burnedCards - cardsUsed;
+  
+  return (
+    <div className="space-y-1.5 md:space-y-2">
+      <div className="flex justify-between text-xs md:text-sm">
+        <span className="text-zinc-400">{label || t('usageProgress')}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-white font-mono cursor-help border-b border-dashed border-zinc-500 hover:border-emerald-400 transition-colors">
+              {cardsUsed} / {TOTAL_CARDS}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent 
+            side="left" 
+            className="bg-zinc-800 text-zinc-100 border border-zinc-700 p-4 min-w-[240px]"
+          >
+            <div className="space-y-2 text-xs">
+              <div className="font-medium text-emerald-400 border-b border-zinc-700 pb-1.5 mb-2">
+                {t('shoeBreakdown')}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">{t('totalCards')}:</span>
+                  <span className="font-mono">{TOTAL_CARDS}</span>
+                </div>
+                <div className="flex justify-between text-orange-400">
+                  <span>🔥 {t('openingBurn')}:</span>
+                  <span className="font-mono">-{burnStartCount}</span>
+                </div>
+                <div className="flex justify-between text-orange-400">
+                  <span>🎴 {t('firstCardUsed')}:</span>
+                  <span className="font-mono">-1</span>
+                </div>
+                <div className="flex justify-between text-purple-400">
+                  <span>🃏 {t('cutCardReserve')}:</span>
+                  <span className="font-mono">-{burnEndCount}</span>
+                </div>
+                <div className="border-t border-zinc-700 pt-1.5 flex justify-between">
+                  <span className="text-zinc-400">{t('initialUsable')}:</span>
+                  <span className="font-mono">{TOTAL_CARDS - burnedCards}</span>
+                </div>
+                <div className="flex justify-between text-emerald-400">
+                  <span>✅ {t('cardsDealt')}:</span>
+                  <span className="font-mono">-{cardsUsed}</span>
+                </div>
+                <div className="border-t border-zinc-700 pt-1.5 flex justify-between font-medium">
+                  <span className="text-white">{t('remainingCards')}:</span>
+                  <span className="font-mono text-emerald-400">{remainingUsable}</span>
+                </div>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      <ProgressBar value={cardsUsed} max={TOTAL_CARDS} />
+      {showRemaining && (
+        <div className="text-[10px] md:text-xs text-zinc-500 text-right">
+          {t('remainingCards')}: {remainingUsable} {t('cards')}
+        </div>
+      )}
     </div>
   );
 }
@@ -137,9 +224,6 @@ export function ShoeTracker({ hideHeader = false }: ShoeTrackerProps) {
     );
   }
 
-  // 计算使用进度
-  const usedCards = TOTAL_CARDS - currentShoe.usableCards;
-
   // 隐藏头部时的简化渲染（移动端首页使用）
   if (hideHeader) {
     return (
@@ -179,12 +263,11 @@ export function ShoeTracker({ hideHeader = false }: ShoeTrackerProps) {
             <TrackerView 
               currentShoe={currentShoe} 
               stats={stats} 
-              usedCards={usedCards} 
             />
           ) : (
             <CardCounterView 
+              currentShoe={currentShoe}
               cardCount={cardCount} 
-              burnedCards={currentShoe.burnStartCount + 1 + currentShoe.burnEndCount}
             />
           )}
         </div>
@@ -228,12 +311,11 @@ export function ShoeTracker({ hideHeader = false }: ShoeTrackerProps) {
           <TrackerView 
             currentShoe={currentShoe} 
             stats={stats} 
-            usedCards={usedCards} 
           />
         ) : (
           <CardCounterView 
+            currentShoe={currentShoe}
             cardCount={cardCount} 
-            burnedCards={currentShoe.burnStartCount + 1 + currentShoe.burnEndCount}
           />
         )}
       </CardContent>
@@ -245,28 +327,17 @@ export function ShoeTracker({ hideHeader = false }: ShoeTrackerProps) {
 function TrackerView({ 
   currentShoe, 
   stats, 
-  usedCards 
 }: { 
-  currentShoe: import('@/types').Shoe; 
+  currentShoe: Shoe; 
   stats: import('@/types').GameStats | null;
-  usedCards: number;
 }) {
   const t = useTranslations('shoe');
 
   return (
     <div className="h-full flex flex-col">
-      {/* 牌靴进度 */}
-      <div className="space-y-1.5 md:space-y-2 shrink-0 pb-5 md:pb-6">
-        <div className="flex justify-between text-xs md:text-sm">
-          <span className="text-zinc-400">{t('usageProgress')}</span>
-          <span className="text-white font-mono">
-            {usedCards} / {TOTAL_CARDS}
-          </span>
-        </div>
-        <ProgressBar value={usedCards} max={TOTAL_CARDS} />
-        <div className="text-[10px] md:text-xs text-zinc-500 text-right">
-          {t('remainingCards')}: {currentShoe.usableCards} {t('cards')}
-        </div>
+      {/* 牌靴进度 - 使用共用组件 */}
+      <div className="shrink-0 pb-5 md:pb-6">
+        <ShoeProgress currentShoe={currentShoe} />
       </div>
 
       <Separator className="bg-zinc-800 shrink-0" />
@@ -382,33 +453,27 @@ function TrackerView({
 
 // 记牌器视图
 function CardCounterView({ 
+  currentShoe,
   cardCount,
-  burnedCards
 }: { 
+  currentShoe: Shoe;
   cardCount: { 
     counts: Record<CardRank, number>; 
     totalPerRank: number; 
     ranks: CardRank[]; 
   };
-  burnedCards: number;
 }) {
   const t = useTranslations('shoe');
   const { counts, totalPerRank, ranks } = cardCount;
   
-  // 计算总剩余
-  const totalRemaining = Object.values(counts).reduce((sum, count) => sum + count, 0);
-  const totalCards = totalPerRank * 13;
-  const totalUsed = totalCards - totalRemaining;
+  // 计算烧牌数（开局烧牌 + 第一张牌 + 切牌保留）
+  const burnedCards = currentShoe.burnStartCount + 1 + currentShoe.burnEndCount;
   
   return (
     <div className="h-full flex flex-col">
-      {/* 使用统计 */}
+      {/* 使用统计 - 使用共用组件 */}
       <div className="mb-3 md:mb-4">
-        <div className="flex justify-between text-xs md:text-sm mb-1.5 md:mb-2">
-          <span className="text-zinc-400">{t('used')}</span>
-          <span className="text-white font-mono">{totalUsed} / {totalCards}</span>
-        </div>
-        <ProgressBar value={totalUsed} max={totalCards} />
+        <ShoeProgress currentShoe={currentShoe} label={t('used')} showRemaining={false} />
       </div>
       
       {/* 点数表格 - 移动端 4 列，桌面端 5 列 */}

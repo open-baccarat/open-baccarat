@@ -203,7 +203,12 @@
     "verifyOnSolana": "Verify on Solana Blockchain ↗",
     "used": "Used",
     "unknownCards": "Unknown",
-    "burnedNotVisible": "Opening Burn + Cut Reserve"
+    "burnedNotVisible": "Opening Burn + Cut Reserve",
+    "shoeBreakdown": "Shoe Breakdown",
+    "totalCards": "Total Cards",
+    "firstCardUsed": "First Card",
+    "initialUsable": "Initial Usable",
+    "cardsDealt": "Cards Dealt"
   },
   "about": {
     "title": "🎴 About OpenBaccarat",

@@ -89,11 +89,12 @@ export function useGameLoop() {
       parseInt(firstCard.rank) || 10
     );
     
-    // 计算需要跳过的牌数（烧牌 + 已使用的牌）
-    const skipCount = burnCount + usedCardsCount;
+    // 计算需要跳过的牌数（第一张牌 + 烧牌 + 已使用的牌）
+    // 注意：第一张牌用于确定烧牌数，本身不参与游戏，需要+1
+    const skipCount = 1 + burnCount + usedCardsCount;
     shoeCardsRef.current = shuffled.slice(skipCount);
     
-    console.log(`📊 牌序状态: 烧牌=${burnCount}, 已使用=${usedCardsCount}, 剩余=${shoeCardsRef.current.length}`);
+    console.log(`📊 牌序状态: 第一张牌=1, 烧牌=${burnCount}, 已使用=${usedCardsCount}, 剩余=${shoeCardsRef.current.length}`);
     
     if (isRecovery && existingShoe) {
       // 恢复已有牌靴
@@ -112,7 +113,8 @@ export function useGameLoop() {
       firstCard: { suit: firstCard.suit, rank: firstCard.rank },
       burnStartCount: burnCount,
       burnEndCount: 15,
-      usableCards: 416 - burnCount - 15,
+      usableCards: 416 - burnCount - 1 - 15,  // 总牌数 - 烧牌 - 第一张牌 - 切牌保留
+      cardsUsed: 0,  // 新牌靴初始为0
       roundsPlayed: 0,
       shuffleVrfProof: shoeId, // 使用牌靴 ID 作为 VRF 证明（确定性洗牌）
       startedAt: new Date(),
@@ -312,10 +314,15 @@ export function useGameLoop() {
     
     // 更新牌靴信息
     if (shoeRef.current) {
+      // 计算本局使用的牌数
+      const cardsUsedThisRound = roundResult.cardsUsed;
+      const newCardsUsed = shoeRef.current.cardsUsed + cardsUsedThisRound;
+      
       const updatedShoe = {
         ...shoeRef.current,
         roundsPlayed: roundNumber,
         usableCards: shoeCardsRef.current.length,
+        cardsUsed: newCardsUsed,  // 累加已使用牌数
       };
       shoeRef.current = updatedShoe;
       setCurrentShoe(updatedShoe);

@@ -203,7 +203,12 @@
     "verifyOnSolana": "在 Solana 区块链上验证 ↗",
     "used": "已使用",
     "unknownCards": "未知牌",
-    "burnedNotVisible": "开局烧牌 + 切牌保留"
+    "burnedNotVisible": "开局烧牌 + 切牌保留",
+    "shoeBreakdown": "牌靴构成详情",
+    "totalCards": "总牌数",
+    "firstCardUsed": "第一张牌",
+    "initialUsable": "初始可用",
+    "cardsDealt": "已发牌"
   },
   "about": {
     "title": "🎴 关于 OpenBaccarat",

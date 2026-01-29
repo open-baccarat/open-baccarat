@@ -151,7 +151,8 @@ export function useDemoMode() {
       firstCard: { suit: 'spade', rank: 'K' },
       burnStartCount: 10,
       burnEndCount: 15,
-      usableCards: 391,
+      usableCards: 390,  // 416 - 10(烧牌) - 1(第一张牌) - 15(切牌保留) = 390
+      cardsUsed: 210,    // 模拟已使用210张牌
       roundsPlayed: 42,
       shuffleVrfProof: null,
       startedAt: new Date(),
