@@ -21,9 +21,11 @@ import {
   getRoadmapData as fetchRoadmapData,
   getGameStats,
   getUsedCardsByShoe,
+  getMaxRoundNumber,
 } from '@/lib/supabase/queries';
 import { config, logConfig } from '@/lib/config';
 import { withDatabaseRetry, withBlockchainRetry } from '@/lib/utils/retry';
+import { acquireGameLock, releaseGameLock, hasGameLock } from '@/lib/game/instanceLock';
 // Memo 通过 API 路由发送（私钥只在服务端可用）
 import type { Card, Round, Shoe, GameStats, RoadmapPoint } from '@/types';
 
@@ -221,37 +223,55 @@ export function useGameLoop() {
     setStats({ ...statsRef.current });
     // 路单数据不要清空，保留从数据库加载的数据
     
-    // 保存牌靴到数据库（根据配置决定，使用同步方式确保成功）
-    if (config.database.enableWrite) {
-      // 使用带重试的同步操作，确保牌靴创建成功
-      withDatabaseRetry(
-        async () => {
-          const result = await saveShoeToDb(shoe);
-          if (!result) {
-            throw new Error('保存牌靴返回空结果');
-          }
-          console.log(`✅ 牌靴已保存到数据库: ${result.id}, 编号 #${result.shoeNumber}`);
-          // 更新牌靴编号为数据库返回的值
-          if (shoeRef.current && shoeRef.current.id === shoe.id) {
-            shoeRef.current.shoeNumber = result.shoeNumber;
-            setCurrentShoe({ ...shoeRef.current });
-          }
-          return result;
-        },
-        `创建牌靴 ${shoe.id}`
-      ).catch((err) => {
-        console.error(`❌ 创建牌靴最终失败（已重试20次）:`, err);
-        // 标记牌靴创建失败，下次启动时会重新创建
-      });
+    console.log(`✅ 牌靴初始化完成，烧牌 ${burnCount} 张，剩余 ${shoeCardsRef.current.length} 张`);
+    
+    // 注意：牌靴保存在 saveShoeAsync 中异步执行
+    // 但 create_next_shoe 函数会自动关闭旧牌靴并分配连续编号
+  }, [setCurrentShoe, setStats]);
+
+  // 异步保存牌靴到数据库（确保编号正确）
+  const saveShoeAsync = useCallback(async (shoe: Shoe): Promise<number | null> => {
+    if (!config.database.enableWrite) {
+      return null;
     }
     
-    console.log(`✅ 牌靴初始化完成，烧牌 ${burnCount} 张，剩余 ${shoeCardsRef.current.length} 张`);
-  }, [setCurrentShoe, setStats]);
+    try {
+      const result = await withDatabaseRetry(
+        async () => {
+          const dbResult = await saveShoeToDb(shoe);
+          if (!dbResult) {
+            throw new Error('保存牌靴返回空结果');
+          }
+          return dbResult;
+        },
+        `创建牌靴 ${shoe.id}`
+      );
+      
+      console.log(`✅ 牌靴已保存到数据库: ${result.id}, 编号 #${result.shoeNumber}`);
+      
+      // 更新牌靴编号
+      if (shoeRef.current && shoeRef.current.id === shoe.id) {
+        shoeRef.current.shoeNumber = result.shoeNumber;
+        setCurrentShoe({ ...shoeRef.current });
+      }
+      
+      return result.shoeNumber;
+    } catch (err) {
+      console.error(`❌ 创建牌靴最终失败:`, err);
+      return null;
+    }
+  }, [setCurrentShoe]);
 
   // 执行一局游戏
   const playRound = useCallback(async () => {
     if (isPlayingRef.current) {
       console.log('⚠️ 已有游戏在进行中，跳过');
+      return;
+    }
+    
+    // 检查是否持有游戏锁
+    if (config.database.enableWrite && !hasGameLock()) {
+      console.error('❌ 未持有游戏锁，无法执行游戏');
       return;
     }
     
@@ -262,18 +282,25 @@ export function useGameLoop() {
     if (shoeCardsRef.current.length < 20) {
       console.log('🔄 牌数不足，准备换靴...');
       
-      // 先关闭当前牌靴
+      // 先关闭当前牌靴（如果需要发推等）
       if (shoeRef.current) {
         await closeCurrentShoe();
       }
       
       // 创建新牌靴
       initializeShoe();
-      await new Promise(r => setTimeout(r, 500));
+      
+      // 等待牌靴保存到数据库（确保编号正确）
+      if (shoeRef.current) {
+        await saveShoeAsync(shoeRef.current);
+      }
+      
+      await new Promise(r => setTimeout(r, 200));
     }
     
-    roundNumberRef.current++;
-    const roundNumber = roundNumberRef.current;
+    // 注意：局号将由数据库原子性分配，这里只是临时值用于显示
+    // 真正的局号在 saveRoundToDb 后才确定
+    const tempRoundNumber = roundNumberRef.current + 1;
     
     // 1. 发牌阶段（牌桌已经在 clearing 阶段清空了）
     setPhase('dealing');
@@ -340,7 +367,7 @@ export function useGameLoop() {
       id: crypto.randomUUID(),
       shoeId: shoeRef.current?.id || 'demo',
       shoeNumber: shoeRef.current?.shoeNumber || 0,
-      roundNumber,
+      roundNumber: tempRoundNumber, // 临时值，数据库会分配真正的局号
       playerCards: roundResult.playerCards,
       bankerCards: roundResult.bankerCards,
       playerTotal: roundResult.playerTotal,
@@ -369,58 +396,56 @@ export function useGameLoop() {
     if (pairInfo.player) statsRef.current.playerPairs++;
     setStats({ ...statsRef.current });
     
-    // 更新路单
+    // ============================================
+    // 关键：同步保存回合到数据库，获取真正的局号
+    // 必须等待完成，否则局号会混乱！
+    // ============================================
+    let actualRoundNumber = tempRoundNumber;
+    
+    if (config.database.enableWrite) {
+      try {
+        const result = await withDatabaseRetry(
+          async () => {
+            const dbResult = await saveRoundToDb(round);
+            if (!dbResult) {
+              throw new Error('保存回合返回空结果');
+            }
+            return dbResult;
+          },
+          `保存回合 #${round.roundNumber}`
+        );
+        
+        // 使用数据库分配的真正局号
+        actualRoundNumber = result.roundNumber;
+        console.log(`✅ 回合已保存到数据库: ${result.id}, 局号 #${actualRoundNumber}`);
+        
+        // 更新 round 对象和所有状态
+        round.roundNumber = actualRoundNumber;
+        roundNumberRef.current = actualRoundNumber;
+        setCurrentRound({ ...round });
+        
+      } catch (err) {
+        console.error(`❌ 保存回合最终失败:`, err);
+        // 即使失败，也要继续使用临时局号（避免卡死）
+        roundNumberRef.current = tempRoundNumber;
+      }
+    } else {
+      // 未启用数据库写入，直接使用临时局号
+      roundNumberRef.current = tempRoundNumber;
+    }
+    
+    // 使用确定的局号更新路单
     roadmapRef.current.push({
       result: roundResult.result,
       roundId: round.id,
-      roundNumber,
+      roundNumber: actualRoundNumber,
       isPair: pairInfo,
     });
     setRoadmapData([...roadmapRef.current]);
     
-    // 添加到历史
+    // 添加到历史（使用确定的局号）
+    round.roundNumber = actualRoundNumber;
     addToHistory(round);
-    
-    // 保存回合到数据库（根据配置决定，带20次重试）
-    // 局号由数据库原子性分配，确保不跳过
-    if (config.database.enableWrite) {
-      withDatabaseRetry(
-        async () => {
-          const result = await saveRoundToDb(round);
-          if (!result) {
-            throw new Error('保存回合返回空结果');
-          }
-          
-          // 使用数据库分配的真正局号更新本地状态
-          const dbRoundNumber = result.roundNumber;
-          console.log(`✅ 回合已保存到数据库: ${result.id}, 局号 #${dbRoundNumber}`);
-          
-          // 如果数据库分配的局号与本地不同，更新本地状态
-          if (dbRoundNumber !== roundNumber) {
-            console.log(`📊 局号已同步: 本地 #${roundNumber} → 数据库 #${dbRoundNumber}`);
-            // 更新 round 对象
-            round.roundNumber = dbRoundNumber;
-            // 更新 ref
-            roundNumberRef.current = dbRoundNumber;
-            // 更新当前回合显示
-            setCurrentRound({ ...round });
-            // 更新历史记录中的局号
-            updateHistoryItem(round.id, { roundNumber: dbRoundNumber });
-            // 更新路单中的局号
-            const roadmapIndex = roadmapRef.current.findIndex(r => r.roundId === round.id);
-            if (roadmapIndex !== -1) {
-              roadmapRef.current[roadmapIndex]!.roundNumber = dbRoundNumber;
-              setRoadmapData([...roadmapRef.current]);
-            }
-          }
-          
-          return result;
-        },
-        `保存回合 #${round.roundNumber}`
-      ).catch((err) => {
-        console.error(`❌ 保存回合 #${round.roundNumber} 最终失败（已重试20次）:`, err);
-      });
-    }
     
     // 更新牌靴信息
     if (shoeRef.current) {
@@ -430,7 +455,7 @@ export function useGameLoop() {
       
       const updatedShoe = {
         ...shoeRef.current,
-        roundsPlayed: roundNumber,
+        roundsPlayed: actualRoundNumber,
         usableCards: shoeCardsRef.current.length,
         cardsUsed: newCardsUsed,  // 累加已使用牌数
       };
@@ -444,21 +469,21 @@ export function useGameLoop() {
         withDatabaseRetry(
           async () => {
             const success = await updateShoeInDb(shoeId, {
-              rounds_played: roundNumber,
+              rounds_played: actualRoundNumber,
             });
             if (!success) {
               throw new Error('更新牌靴返回失败');
             }
             return success;
           },
-          `更新牌靴 rounds_played=${roundNumber}`
+          `更新牌靴 rounds_played=${actualRoundNumber}`
         ).catch((err) => {
           console.error(`❌ 更新牌靴最终失败（已重试20次）:`, err);
         });
       }
     }
     
-    console.log(`✅ 第 ${roundNumber} 局完成: ${roundResult.result} (闲${roundResult.playerTotal}:庄${roundResult.bankerTotal})`);
+    console.log(`✅ 第 ${actualRoundNumber} 局完成: ${roundResult.result} (闲${roundResult.playerTotal}:庄${roundResult.bankerTotal})`);
     
     // 记录到 Solana 链上（通过 API 路由发送，私钥只在服务端）
     // 使用重试机制确保链上记录成功
@@ -546,8 +571,11 @@ export function useGameLoop() {
     setPhase('waiting');
     isPlayingRef.current = false;
     
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     initializeShoe,
+    saveShoeAsync,
+    // closeCurrentShoe - 故意省略，避免循环依赖
     setPhase,
     setIsAnimating,
     setPlayerCards,
@@ -555,7 +583,6 @@ export function useGameLoop() {
     setCurrentRound,
     setStats,
     addToHistory,
-    updateHistoryItem,
     setRoadmapData,
     setCurrentShoe,
   ]);
@@ -690,12 +717,37 @@ export function useGameLoop() {
     // 输出当前配置
     logConfig();
     
-    // 从数据库加载历史数据（断点续传）
+    // ============================================
+    // 步骤 1: 获取游戏实例锁（确保只有一个实例运行）
+    // ============================================
     if (config.database.enableWrite) {
-      await loadHistoryFromDB();
+      const lockAcquired = await acquireGameLock();
+      if (!lockAcquired) {
+        console.error('❌ 无法获取游戏锁：已有其他实例在运行');
+        console.error('⚠️ 请关闭其他运行中的标签页或等待 2 分钟后重试');
+        setPhase('waiting');
+        return;
+      }
+      console.log('🔒 已获取游戏实例锁');
     }
     
-    // 检查是否有活动牌靴
+    // ============================================
+    // 步骤 2: 从数据库加载历史数据（断点续传）
+    // ============================================
+    if (config.database.enableWrite) {
+      await loadHistoryFromDB();
+      
+      // 从数据库获取最大局号（确保与数据库同步）
+      const dbMaxRound = await getMaxRoundNumber();
+      if (dbMaxRound > roundNumberRef.current) {
+        roundNumberRef.current = dbMaxRound;
+        console.log(`📊 局号已同步到数据库最大值: #${dbMaxRound}`);
+      }
+    }
+    
+    // ============================================
+    // 步骤 3: 检查并恢复活动牌靴
+    // ============================================
     if (shoeRef.current && shoeRef.current.isActive) {
       console.log(`🔍 发现活动牌靴 #${shoeRef.current.shoeNumber}，尝试恢复牌序...`);
       
@@ -721,6 +773,11 @@ export function useGameLoop() {
     } else {
       // 没有活动牌靴，创建新的
       initializeShoe();
+      
+      // 等待牌靴保存到数据库（确保编号正确）
+      if (shoeRef.current && config.database.enableWrite) {
+        await saveShoeAsync(shoeRef.current);
+      }
     }
     
     // 初始化音效
@@ -729,7 +786,7 @@ export function useGameLoop() {
     // 设置等待状态，等待到整分钟后开始第一局
     setPhase('waiting');
     
-  }, [initializeShoe, setPhase, loadHistoryFromDB, closeCurrentShoe]);
+  }, [initializeShoe, setPhase, loadHistoryFromDB, closeCurrentShoe, saveShoeAsync]);
 
   // 计算到下一个整分钟的毫秒数
   const getMillisecondsToNextMinute = useCallback(() => {
@@ -788,8 +845,27 @@ export function useGameLoop() {
     };
   }, [phase, playRound, clearTable, getMillisecondsToNextMinute]);
 
+  // 停止游戏循环并释放锁
+  const stopGameLoop = useCallback(async () => {
+    console.log('🛑 停止游戏循环...');
+    
+    // 清除定时器
+    if (dealTimerRef.current) {
+      clearTimeout(dealTimerRef.current);
+      dealTimerRef.current = null;
+    }
+    
+    // 释放游戏锁
+    if (config.database.enableWrite) {
+      await releaseGameLock();
+    }
+    
+    isPlayingRef.current = false;
+  }, []);
+
   return {
     startGameLoop,
+    stopGameLoop,
     playRound,
     initializeShoe,
   };

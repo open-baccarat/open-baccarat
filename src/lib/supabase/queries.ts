@@ -318,11 +318,14 @@ export function subscribeToRounds(callback: (round: Round) => void) {
 // 写入操作
 // ============================================
 
-// 创建新牌靴（使用原子性函数，确保编号不跳过）
+// 创建新牌靴（使用原子性函数，确保编号不跳过，并自动关闭旧牌靴）
 export async function createShoe(shoe: Shoe): Promise<{ id: string; shoeNumber: number } | null> {
-  // 使用原子性数据库函数，确保牌靴编号连续不跳过
+  // 使用 create_next_shoe 函数：
+  // 1. 自动关闭所有活动牌靴
+  // 2. 原子性分配牌靴编号（MAX+1）
+  // 3. 创建新牌靴
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)('create_shoe_atomic', {
+  const { data, error } = await (supabase.rpc as any)('create_next_shoe', {
     p_id: shoe.id,
     p_deck_count: shoe.deckCount,
     p_total_cards: shoe.totalCards,
@@ -331,8 +334,6 @@ export async function createShoe(shoe: Shoe): Promise<{ id: string; shoeNumber: 
     p_burn_start_count: shoe.burnStartCount,
     p_burn_end_count: shoe.burnEndCount,
     p_shuffle_vrf_proof: shoe.shuffleVrfProof,
-    p_started_at: shoe.startedAt.toISOString(),
-    p_started_at_unix: shoe.startedAtUnix,
     p_solana_signature: shoe.solanaSignature,
     p_blockchain_status: shoe.blockchainStatus,
   });
